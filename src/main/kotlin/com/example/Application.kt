@@ -2,7 +2,7 @@ package com.example
 
 import com.example.plugins.*
 import com.example.src.repository.DatabaseFactory
-import com.example.src.routes.userRoute
+
 import com.typesafe.config.ConfigFactory
 import io.ktor.http.*
 import io.ktor.serialization.gson.*

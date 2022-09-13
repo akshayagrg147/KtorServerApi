@@ -30,7 +30,7 @@ dependencies {
     testImplementation ("io.ktor:ktor-server-tests:$ktor_version")
     implementation("io.ktor:ktor-server-content-negotiation:$ktor_version")
     implementation("io.ktor:ktor-serialization-gson:$ktor_version")
-    implementation("org.litote.kmongo:kmongo-coroutine:4.3.0")
+    implementation("org.litote.kmongo:kmongo-coroutine:4.7.1")
     implementation("io.ktor:ktor-server-auth:$ktor_version")
     implementation("io.ktor:ktor-server-auth-jwt:$ktor_version")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit:$kotlin_version")
