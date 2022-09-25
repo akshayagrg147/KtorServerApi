@@ -23,6 +23,16 @@ class TokenManager(val config: HoconApplicationConfig) {
             .sign(Algorithm.HMAC256(secret))
         return token
     }
+    fun generateJWTExistToken(mobileNumber: String): String {
+
+        val token = JWT.create()
+            .withAudience(audience)
+            .withIssuer(issuer)
+            .withClaim("JwtMobile", mobileNumber)
+            .withExpiresAt(Date(expirationDate))
+            .sign(Algorithm.HMAC256(secret))
+        return token
+    }
 
     fun verifyJWTToken(): JWTVerifier {
         return JWT.require(Algorithm.HMAC256(secret))

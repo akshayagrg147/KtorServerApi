@@ -8,26 +8,15 @@ import io.ktor.server.request.*
 
 
 import com.example.TokenManager
-import com.example.src.data.BestSelling
-import com.example.src.data.ExclusiveOffers
-import com.example.src.data.HomeProducts
+import com.example.src.data.*
 
 
-import com.example.src.data.Users
 import com.example.src.repository.DatabaseFactory
 import com.typesafe.config.ConfigFactory
-import io.ktor.http.*
-import io.ktor.server.application.*
 import io.ktor.server.auth.*
-import io.ktor.server.auth.jwt.*
 import io.ktor.server.config.*
-import io.ktor.server.request.*
-import io.ktor.server.response.*
-import io.ktor.server.routing.*
-import io.ktor.server.routing.application
 
 import java.lang.Exception
-import kotlin.text.get
 
 
 fun Route.userRoute(
@@ -35,17 +24,17 @@ fun Route.userRoute(
 ) {
     val tokenManager = TokenManager(HoconApplicationConfig(ConfigFactory.load()))
     route("/Customers") {
-        post("/addproduct"){
-
-            db.bestselling(BestSelling("Bell Pipper","50","1 kg"))
-            db.exclusiveoffers(ExclusiveOffers("Ginger","40","1 kg"))
-            db.homeproducts(HomeProducts("Beef Bone","30","1 kg"))
-            call.respond("saved successfully")
-        }
+//        post("/addproduct"){
+//
+//            db.bestselling(BestSelling("Bell Pipper","50","1 kg"))
+//            db.exclusiveoffers(ExclusiveOffers("Ginger","40","1 kg"))
+//            db.homeproducts(HomeProducts("Beef Bone","30","1 kg",null))
+//            call.respond("saved successfully")
+//        }
         post("/ExclusiveOffers") {
             try {
                 val product = db.getExcusiveAllProducts()
-                call.respond(product)
+                call.respond(status = HttpStatusCode.OK, HomeProductResponse(product, 200, "fetched successfully"))
 
             } catch (e: Exception) {
                 application.log.error("Failed to get data", e.message)
@@ -55,31 +44,113 @@ fun Route.userRoute(
         post("/HomeAllProducts") {
             try {
                 val product = db.getHomeAllProducts()
-                call.respond(product)
+                call.respond(status = HttpStatusCode.OK, HomeProductResponse(product, 200, "fetched successfully"))
+
+            } catch (e: Exception) {
+                application.log.error("Failed to get data", e.message)
+                call.respond(status = HttpStatusCode.BadRequest, "${e.message}")
+            }
+        }
+        post("/BestSelling") {
+            try {
+                val product = db.getBestAllProducts()
+                call.respond(status = HttpStatusCode.OK, HomeProductResponse(product, 200, "fetched successfully"))
 
             } catch (e: Exception) {
                 application.log.error("Failed to get data", e.message)
                 call.respond("${e.message}")
             }
         }
-        post("/getProfile") {
+
+        //calling product id
+        post("/GetPendingProductById") {
+            try {
+                val requestBody = call.receive<SearchByProductId>()
+                val product = db.GetPendingProductById(requestBody.ProductId)
+                print("messageakis ${product} $requestBody")
+                if (product?.productId != null)
+                    call.respond(
+                        status = HttpStatusCode.OK,
+                        ProductResponseById(product, 200, "fetched successfully")
+                    )
+                else
+                    call.respond(
+                        status = HttpStatusCode.OK,
+                        ProductResponseById(product, 400, "Items not available")
+                    )
+
+            } catch (e: Exception) {
+                application.log.error("Failed to get data", e.message)
+                call.respond(status = HttpStatusCode.BadRequest, "${e.message}")
+            }
+        }
+        post("/GetBestProductById") {
+            try {
+                val requestBody = call.receive<SearchByProductId>()
+                val product = db.getBestProductBasedId(requestBody.ProductId)
+                print("messageakis ${product} $requestBody")
+                if (product?.productId != null)
+                    call.respond(
+                        status = HttpStatusCode.OK,
+                        ProductResponseById(product, 200, "fetched successfully")
+                    )
+                else
+                    call.respond(
+                        status = HttpStatusCode.OK,
+                        ProductResponseById(product, 400, "Items not available")
+                    )
+
+            } catch (e: Exception) {
+                application.log.error("Failed to get data", e.message)
+                call.respond(status = HttpStatusCode.BadRequest, "${e.message}")
+            }
+        }
+        post("/GetExclusiveProductById") {
+            try {
+                val requestBody = call.receive<SearchByProductId>()
+                val product = db.getExclusiveProductBasedId(requestBody.ProductId)
+                print("messageakis ${product} $requestBody")
+                if (product?.productId != null)
+                    call.respond(
+                        status = HttpStatusCode.OK,
+                        ProductResponseById(product, 200, "fetched successfully")
+                    )
+                else
+                    call.respond(
+                        status = HttpStatusCode.OK,
+                        ProductResponseById(product, 400, "Items not available")
+                    )
+
+            } catch (e: Exception) {
+                application.log.error("Failed to get data", e.message)
+                call.respond(status = HttpStatusCode.BadRequest, "${e.message}")
+            }
+        }
+
+
+//get profile
+
+
+        //Login
+        post("/register") {
             val requestBody = call.receive<Users>()
+            print("request_body" + requestBody)
 
 
             try {
-                if (requestBody.phone != null ) {
-                    try {
-                        val user = db.getUserByPhone(requestBody.phone)
-                        call.respond(user!!)
+                if (requestBody.phone != null && requestBody.email != null && requestBody.name != null) {
 
-                    } catch (e: Exception) {
-                        call.respond(e.message.toString())
-                        application.log.error("Failed to get data", e.message)
-                    }
-                    }else {
+                        val user = db.addUser(requestBody)
+                        val token = tokenManager.generateJWTToken(user)
+                        call.respond(
+                            HttpStatusCode.OK,
+                            JwtResponse(token, 200, "Registered Successfully")
+                        )
+
+                } else {
                     call.respond(
                         Message(
-                            "Mobile Number should not be empty",false,
+                            "Please fill all informations", false,
                             401
                         )
                     )
@@ -88,81 +159,34 @@ fun Route.userRoute(
                 }
 
 
-
-
             } catch (e: Exception) {
                 application.log.error("Failed to register user", e.message)
                 call.respond("${e.message}")
             }
         }
-
-        post("/BestSelling") {
-            try {
-                val product = db.getBestAllProducts()
-                call.respond(product)
-
-            } catch (e: Exception) {
-                application.log.error("Failed to get data", e.message)
-                call.respond("${e.message}")
-            }
-        }
-        post("/register") {
-            val requestBody = call.receive<Users>()
-            print("request_body"+requestBody)
-
-
-            try {
-                if (requestBody.phone != null && requestBody.email != null&& requestBody.name!=null) {
-                    val isEmailExist = db.CheckNumberExist(requestBody.email)
-                    if (isEmailExist) {
-                        call.respond(Message(
-                            "email already exist", false,HttpStatusCode.BadRequest.value
-                            )
-                        )
-                    } else {
-                        val user = db.addUser(requestBody)
-                        val token = tokenManager.generateJWTToken(user)
-                        call.respond(
-                            HttpStatusCode.OK,
-                            JwtResponse(token, 200,"Registered Successfully")
-                        )
-                    } }else {
-                        call.respond(
-                            Message(
-                                "Please fill all informations",false,
-                                401
-                            )
-                        )
-
-
-                }
-
-
-
-
-            } catch (e: Exception) {
-                application.log.error("Failed to register user", e.message)
-                call.respond("${e.message}")
-            }
-        }
-        post("/login") {
+        post("/checkMobileNumberExist") {
             val requestBody = call.receive<Users>()
 
             try {
-                if (requestBody.phone != null ) {
+                if (requestBody.phone != null) {
                     val isPhoneExist = db.CheckNumberExist(requestBody.phone)
                     if (isPhoneExist) {
-                        call.respond(Message(
-                            "phone number already exist",false,200)
+                        val token = tokenManager.generateJWTExistToken(requestBody.phone)
+                        call.respond(
+                            HttpStatusCode.OK,
+                            CheckNumberExist(true, 200, true,token)
                         )
+
                     } else {
-                        call.respond(Message(
-                            "phone number  not exist",true,200)
+                        call.respond(
+                            HttpStatusCode.OK,
+                            CheckNumberExist(false, 400, true,"no access")
                         )
-                    } } else {
+                    }
+                } else {
                     call.respond(
                         Message(
-                            "Phone number should not be empty",false,
+                            "Phone number should not be empty", false,
                             200
                         )
                     )
@@ -171,18 +195,17 @@ fun Route.userRoute(
                 }
 
 
-
-
             } catch (e: Exception) {
                 application.log.error("Failed to register user", e.message)
                 call.respond(
                     Message(
-                        "something went wrong",false,
+                        "something went wrong", false,
                         401
                     )
                 )
             }
         }
+
         authenticate("auth-jwt") {
             get("/allusers") {
                 try {
@@ -229,12 +252,26 @@ fun Route.userRoute(
 
 data class Message(
     val message: String,
-    val status:Boolean,
-    val statusCode: Int
+    val status: Boolean,
+    val statusCode: Int,
+
 )
+data class CheckNumberExist(val isMobileExist: Boolean,val statusCode: Int,val status: Boolean,val JwtToken:String)
 
 data class JwtResponse(
     val token: String,
+    val statusCode: Int,
+    val message: String
+)
+
+data class HomeProductResponse(
+    val list: List<Any>,
+    val statusCode: Int,
+    val message: String
+)
+
+data class ProductResponseById<T>(
+    val ProductResponse: T?,
     val statusCode: Int,
     val message: String
 )

@@ -40,11 +40,21 @@ class DatabaseFactory {
     }
 
     suspend fun getAllUsers():List<Users> = userCollection.find().toList()
+
+   //get home products
     suspend fun getHomeAllProducts():List<HomeProducts> = home_collections.find().toList()
+    suspend fun GetPendingProductById(productId:String):HomeProducts?= home_collections.find(HomeProducts::productId  eq productId).first()
+    suspend fun getExclusiveProductBasedId(productId:String):ExclusiveOffers?= exclusive_collection.find(ExclusiveOffers::productId eq productId).first()
+
+    suspend fun getBestProductBasedId(productId:String):BestSelling?= BestSelling_collection.find(BestSelling::productId eq productId).first()
+
+
+
     suspend fun getBestAllProducts():List<BestSelling> = BestSelling_collection.find().toList()
     suspend fun getExcusiveAllProducts():List<ExclusiveOffers> = exclusive_collection.find().toList()
+
     suspend fun getUserByPhone(phone:String):Users? = userCollection.find(Users::phone eq phone).first()
-    suspend fun CheckNumberExist(user_email:String):Boolean= userCollection.find(Users::email eq user_email).toList().isEmpty()
+    suspend fun CheckNumberExist(phone:String):Boolean= userCollection.find(Users::phone eq phone).toList().isNotEmpty()
     suspend fun deleteUserById(userId: String):Boolean = userCollection.deleteOne(Users::userId eq userId).wasAcknowledged()
 
 }
