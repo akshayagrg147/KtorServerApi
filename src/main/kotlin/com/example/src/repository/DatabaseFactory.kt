@@ -16,6 +16,8 @@ class DatabaseFactory {
     private val client = KMongo.createClient().coroutine
     private val database = client.getDatabase("test")
     val userCollection: CoroutineCollection<Users> = database.getCollection()
+    val orderdetails: CoroutineCollection<orderitem> = database.getCollection()
+    val productcollection: CoroutineCollection<ItemsCollections> = database.getCollection()
     val exclusive_collection: CoroutineCollection<ExclusiveOffers> = database.getCollection()
     val BestSelling_collection: CoroutineCollection<BestSelling> = database.getCollection()
     val home_collections: CoroutineCollection<HomeProducts> = database.getCollection()
@@ -24,6 +26,10 @@ class DatabaseFactory {
     suspend fun addUser(users: Users): Users {
         userCollection.insertOne(users)
         return users
+    }
+    suspend fun orderdetails(order: orderitem): orderitem {
+        orderdetails.insertOne(order)
+        return order
     }
 
     suspend fun exclusiveoffers(products: ExclusiveOffers): ExclusiveOffers {
@@ -38,11 +44,13 @@ class DatabaseFactory {
         home_collections.insertOne(products)
         return products
     }
-
+    suspend fun getAllOrder():List<orderitem> = orderdetails.find().toList()
     suspend fun getAllUsers():List<Users> = userCollection.find().toList()
 
    //get home products
     suspend fun getHomeAllProducts():List<HomeProducts> = home_collections.find().toList()
+
+    suspend fun getSearchResult():List<HomeProducts> = home_collections.find().toList()
     suspend fun GetPendingProductById(productId:String):HomeProducts?= home_collections.find(HomeProducts::productId  eq productId).first()
     suspend fun getExclusiveProductBasedId(productId:String):ExclusiveOffers?= exclusive_collection.find(ExclusiveOffers::productId eq productId).first()
 
@@ -52,6 +60,7 @@ class DatabaseFactory {
 
     suspend fun getBestAllProducts():List<BestSelling> = BestSelling_collection.find().toList()
     suspend fun getExcusiveAllProducts():List<ExclusiveOffers> = exclusive_collection.find().toList()
+    suspend fun getProductSubItems(productId:String):List<ItemsCollections?> = productcollection.find(ItemsCollections::itemCategoryId eq productId).toList()
 
     suspend fun getUserByPhone(phone:String):Users? = userCollection.find(Users::phone eq phone).first()
     suspend fun CheckNumberExist(phone:String):Boolean= userCollection.find(Users::phone eq phone).toList().isNotEmpty()

@@ -1,22 +1,20 @@
 package com.example.plugins
 
-import io.ktor.server.routing.*
-import io.ktor.http.*
-import io.ktor.server.application.*
-import io.ktor.server.response.*
-import io.ktor.server.request.*
-
 
 import com.example.TokenManager
 import com.example.src.data.*
-
-
 import com.example.src.repository.DatabaseFactory
+import com.google.gson.Gson
 import com.typesafe.config.ConfigFactory
+import io.ktor.http.*
+import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.config.*
-
-import java.lang.Exception
+import io.ktor.server.request.*
+import io.ktor.server.response.*
+import io.ktor.server.routing.*
+import java.util.*
+import kotlin.collections.ArrayList
 
 
 fun Route.userRoute(
@@ -41,7 +39,53 @@ fun Route.userRoute(
                 call.respond("${e.message}")
             }
         }
+        post("/ItemsCollections") {
+            try {
+                val requestBody = call.receive<SearchByProductId>()
+                println("requestbody is ${requestBody.ProductId}")
+                if(requestBody.ProductId!=null) {
+                    val listitems = db.getProductSubItems(requestBody.ProductId)
+                    call.respond(status = HttpStatusCode.OK, HomeProductResponse(listitems, 200, "fetched successfully"))
+
+                }
+
+
+            } catch (e: Exception) {
+                application.log.error("Failed to get data", e.message)
+                call.respond("${e.message}")
+            }
+        }
+        post("/getUserDetails") {
+            try {
+                val requestBody = call.receive<UserRequest>()
+               println("requestbody is ${requestBody.phone}")
+                if(requestBody.phone!=null) {
+
+                        val user = db.getUserByPhone(requestBody.phone)
+                       call.respond(status = HttpStatusCode.OK, UserProfileResponse(user, 200, "fetched successfully"))
+
+
+
+                }
+            else{
+                    call.respond(status = HttpStatusCode.OK, UserProfileResponse(null, 400, "mobile number incorrect"))
+
+            }} catch (e: Exception) {
+                application.log.error("Failed to get data", e.message)
+                call.respond("${e.message}")
+            }
+        }
         post("/HomeAllProducts") {
+            try {
+                val product = db.getHomeAllProducts()
+                call.respond(status = HttpStatusCode.OK, HomeProductResponse(product, 200, "fetched successfully"))
+
+            } catch (e: Exception) {
+                application.log.error("Failed to get data", e.message)
+                call.respond(status = HttpStatusCode.BadRequest, "${e.message}")
+            }
+        }
+        post("/SearchProduct"){
             try {
                 val product = db.getHomeAllProducts()
                 call.respond(status = HttpStatusCode.OK, HomeProductResponse(product, 200, "fetched successfully"))
@@ -66,7 +110,7 @@ fun Route.userRoute(
         post("/GetPendingProductById") {
             try {
                 val requestBody = call.receive<SearchByProductId>()
-                val product = db.GetPendingProductById(requestBody.ProductId)
+                val product = db.GetPendingProductById(requestBody.ProductId!!)
                 print("messageakis ${product} $requestBody")
                 if (product?.productId != null)
                     call.respond(
@@ -84,10 +128,67 @@ fun Route.userRoute(
                 call.respond(status = HttpStatusCode.BadRequest, "${e.message}")
             }
         }
+        post("/CreateOrderId") {
+
+            val requestBodyItem = call.receive<orderitem>()
+            try {
+                var allitemcalled:Boolean?=false
+                var lsInput:ArrayList<Orders> = ArrayList()
+                val cal = Calendar.getInstance()
+                requestBodyItem.createdDate = cal.time.toString()
+                requestBodyItem.orderId = "OD${System.currentTimeMillis()}"
+                for(requestBody in requestBodyItem.orderList) {
+                    if (requestBody.productprice != null && requestBody.productId != null && requestBody.product_name != null  && requestBody.quantity != null ) {
+
+                        lsInput.add(requestBody)
+                      //  if(requestBodyItem.list.size-1==totalitem)
+                        allitemcalled=true
+
+
+
+                    }
+                }
+
+                if(allitemcalled == true){
+                    val order = db.orderdetails(requestBodyItem)
+                    call.respond(
+                        HttpStatusCode.OK,
+                        BookedOrders(ProductResponse = order, statusCode =  200, message = "Order Placed successfully")
+                    )
+
+                }
+                else {
+                    call.respond(
+                        Message(
+                            "Missing Item", false,
+                            401
+                        )
+                    )
+
+
+                }
+
+
+            } catch (e: Exception) {
+                application.log.error("Failed to register user", e.message)
+                call.respond("${e.message}")
+            }
+        }
+        post("/AllOrders") {
+            try { val requestBodyItem = call.receive<UserRequest>()
+                val orders = db.getAllOrder()
+                call.respond(status = HttpStatusCode.OK, HomeProductResponse(orders, 200, "fetched successfully"))
+
+            } catch (e: Exception) {
+                application.log.error("Failed to get data", e.message)
+                call.respond(status = HttpStatusCode.BadRequest, "${e.message}")
+            }
+        }
+
         post("/GetBestProductById") {
             try {
                 val requestBody = call.receive<SearchByProductId>()
-                val product = db.getBestProductBasedId(requestBody.ProductId)
+                val product = db.getBestProductBasedId(requestBody.ProductId!!)
                 print("messageakis ${product} $requestBody")
                 if (product?.productId != null)
                     call.respond(
@@ -108,7 +209,7 @@ fun Route.userRoute(
         post("/GetExclusiveProductById") {
             try {
                 val requestBody = call.receive<SearchByProductId>()
-                val product = db.getExclusiveProductBasedId(requestBody.ProductId)
+                val product = db.getExclusiveProductBasedId(requestBody.ProductId!!)
                 print("messageakis ${product} $requestBody")
                 if (product?.productId != null)
                     call.respond(
@@ -264,14 +365,28 @@ data class JwtResponse(
     val message: String
 )
 
-data class HomeProductResponse(
-    val list: List<Any>,
+data class HomeProductResponse<T>(
+    val list: List<T>,
     val statusCode: Int,
     val message: String
 )
 
 data class ProductResponseById<T>(
     val ProductResponse: T?,
+    val statusCode: Int,
+    val message: String
+)
+data class UserProfileResponse<T>(
+    val name:T?=null,
+    val statusCode: Int,
+    val message: String
+
+
+)
+
+data class BookedOrders<T>(
+    val ProductResponse: T?,
+
     val statusCode: Int,
     val message: String
 )
