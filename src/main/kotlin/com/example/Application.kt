@@ -15,14 +15,18 @@ import io.ktor.server.netty.*
 import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import io.ktor.http.HttpMethod
+import io.ktor.server.plugins.cors.routing.*
+
 
 fun main() {
-    embeddedServer(Netty, port = 8080, host = "0.0.0.0") {
+    embeddedServer(Netty, port = 8084, host = "0.0.0.0") {
         val databaseFactory = DatabaseFactory()
         val config = HoconApplicationConfig(ConfigFactory.load())
         val tokenManager = TokenManager(config)
         routing{
             userRoute(databaseFactory)
+            adminRoute(databaseFactory)
         }
         install(ContentNegotiation){
             gson {
@@ -30,6 +34,18 @@ fun main() {
                 disableHtmlEscaping()
             }
         }
+        install(CORS) {
+            allowMethod(HttpMethod.Options)
+            allowMethod(HttpMethod.Put)
+            allowMethod(HttpMethod.Delete)
+            allowMethod(HttpMethod.Patch)
+            allowMethod(HttpMethod.Post)
+            allowMethod(HttpMethod.Get)
+            allowNonSimpleContentTypes = true
+            anyHost()
+
+        }
+
         install(Authentication) {
 
             jwt("auth-jwt") {
