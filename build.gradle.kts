@@ -5,6 +5,7 @@ val logback_version: String by project
 plugins {
     application
     kotlin("jvm") version "1.7.10"
+    id("com.github.johnrengelman.shadow") version "6.1.0"
 }
 
 group = "com.example"
@@ -34,4 +35,10 @@ dependencies {
     implementation("io.ktor:ktor-server-auth:2.1.2")
     implementation("io.ktor:ktor-server-auth-jwt:2.1.2")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit:$kotlin_version")
+}
+
+tasks.withType<Jar> {
+    manifest {
+        attributes["Main-Class"] = application.mainClassName
+    }
 }
