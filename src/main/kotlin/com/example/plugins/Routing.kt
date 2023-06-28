@@ -4,7 +4,6 @@ package com.example.plugins
 import com.example.TokenManager
 import com.example.src.data.*
 import com.example.src.repository.DatabaseFactory
-import com.google.gson.Gson
 import com.typesafe.config.ConfigFactory
 import io.ktor.http.*
 import io.ktor.server.application.*
@@ -20,6 +19,7 @@ import kotlin.collections.ArrayList
 fun Route.userRoute(
     db: DatabaseFactory
 ) {
+
     val tokenManager = TokenManager(HoconApplicationConfig(ConfigFactory.load()))
     route("/Customers") {
 //        post("/addproduct"){
@@ -29,14 +29,29 @@ fun Route.userRoute(
 //            db.homeproducts(HomeProducts("Beef Bone","30","1 kg",null))
 //            call.respond("saved successfully")
 //        }
+
+        post {  }
         post("/ExclusiveOffers") {
             try {
-                val product = db.getExcusiveAllProducts()
-                call.respond(status = HttpStatusCode.OK, HomeProductResponse(product, 200, "fetched successfully"))
+                val value = call.receive<CityAailibilty>()
+                print("value_print ${value.city}")
+                val product = db.getHomeAllProducts()
+                var exclusive= emptyList<HomeProducts>()
+                if(value.city=="kaithal") {
+                    exclusive=product.filter { it.category=="exclusive" }
+                    call.respond(
+                        status = HttpStatusCode.OK,
+                        HomeProductResponse(exclusive, 200, "fetched successfully")
+                    )
+                }
+                else
+                {
+                    call.respond(status = HttpStatusCode.OK, HomeProductResponse(exclusive, 200, "fetched successfully"))
 
+                }
             } catch (e: Exception) {
                 application.log.error("Failed to get data", e.message)
-                call.respond("${e.message}")
+                call.respond(status = HttpStatusCode.BadRequest,"${e.message}")
             }
         }
         post("/ItemsCollections") {
@@ -75,9 +90,38 @@ fun Route.userRoute(
                 call.respond("${e.message}")
             }
         }
-        post("/HomeAllProducts") {
+
+        get("/HomeCategoryWiseProducts") {
+
             try {
                 val product = db.getHomeAllProducts()
+                val milk=product.filter { it.category=="milk" }.take(4)
+                val electrical=product.filter { it.category=="electrical" }.take(4)
+                val pigarbagepes=product.filter { it.category=="garbage" }.take(4)
+                val pipes=product.filter { it.category=="pipes" }.take(4)
+                val ls= mutableListOf<DashboardHomeProductsModal>()
+                ls.add(DashboardHomeProductsModal(milk,"milk","Milk-For Good Health"))
+                ls.add(DashboardHomeProductsModal(electrical,"electrical","Electricals-Need for Speed",))
+                ls.add(DashboardHomeProductsModal(pigarbagepes,"garbage","Garbage:Window Throw",))
+                ls.add(DashboardHomeProductsModal(pipes,"pipes","Pipes:Get Wet Soon",))
+
+                call.respond(status = HttpStatusCode.OK, HomeProductResponse(ls, 200, "fetched successfully"))
+
+            } catch (e: Exception) {
+                application.log.error("Failed to get data", e.message)
+                call.respond(status = HttpStatusCode.BadRequest, "${e.message}")
+            }
+        }
+        get("/HomeAllProducts") {
+
+            try {
+                val skip = call.parameters["skip"]
+                val limit = call.parameters["limit"]
+                val category = call.parameters["category"]
+
+                println(skip+"--tttestting-"+limit+"--"+call.parameters["category"])
+
+                val product = db.getHomeAllProducts(Integer.parseInt(skip),Integer.parseInt(limit),category)
                 call.respond(status = HttpStatusCode.OK, HomeProductResponse(product, 200, "fetched successfully"))
 
             } catch (e: Exception) {
@@ -85,9 +129,13 @@ fun Route.userRoute(
                 call.respond(status = HttpStatusCode.BadRequest, "${e.message}")
             }
         }
-        post("/SearchProduct"){
+        get("/SearchAllProducts") {
+
             try {
-                val product = db.getHomeAllProducts()
+                val value = call.parameters["query"]
+                val regex = Regex("${value}.*",RegexOption.IGNORE_CASE)
+
+                val product = db.getSearchAllProducts(regex)
                 call.respond(status = HttpStatusCode.OK, HomeProductResponse(product, 200, "fetched successfully"))
 
             } catch (e: Exception) {
@@ -95,10 +143,22 @@ fun Route.userRoute(
                 call.respond(status = HttpStatusCode.BadRequest, "${e.message}")
             }
         }
+//        post("/SearchProduct"){
+//            try {
+//                val product = db.getHomeAllProducts()
+//                call.respond(status = HttpStatusCode.OK, HomeProductResponse(product, 200, "fetched successfully"))
+//
+//            } catch (e: Exception) {
+//                application.log.error("Failed to get data", e.message)
+//                call.respond(status = HttpStatusCode.BadRequest, "${e.message}")
+//            }
+//        }
         post("/BestSelling") {
             try {
-                val product = db.getBestAllProducts()
-                call.respond(status = HttpStatusCode.OK, HomeProductResponse(product, 200, "fetched successfully"))
+
+                val product = db.getHomeAllProducts()
+                val best=product.filter { it.category=="best" }
+                call.respond(status = HttpStatusCode.OK, HomeProductResponse(best, 200, "fetched successfully"))
 
             } catch (e: Exception) {
                 application.log.error("Failed to get data", e.message)
@@ -137,8 +197,9 @@ fun Route.userRoute(
                 val cal = Calendar.getInstance()
                 requestBodyItem.createdDate = cal.time.toString()
                 requestBodyItem.orderId = "OD${System.currentTimeMillis()}"
+                print("request_body ${requestBodyItem.orderList}")
                 for(requestBody in requestBodyItem.orderList) {
-                    if (requestBody.productprice != null && requestBody.productId != null && requestBody.product_name != null  && requestBody.quantity != null ) {
+                    if (requestBody.productprice != null && requestBody.productId != null && requestBody.productName != null  && requestBody.quantity != null ) {
 
                         lsInput.add(requestBody)
                       //  if(requestBodyItem.list.size-1==totalitem)
@@ -175,7 +236,7 @@ fun Route.userRoute(
             }
         }
         post("/AllOrders") {
-            try { val requestBodyItem = call.receive<UserRequest>()
+            try {
                 val orders = db.getAllOrder()
                 call.respond(status = HttpStatusCode.OK, HomeProductResponse(orders, 200, "fetched successfully"))
 
@@ -206,6 +267,24 @@ fun Route.userRoute(
                 call.respond(status = HttpStatusCode.BadRequest, "${e.message}")
             }
         }
+        post("/GetRelatedSearch"){
+            try {
+                val requestBody = call.receive<RelatedSerachByPriceAndCategory>()
+                val product = db.getRelatedSearch(requestBody.Price!!).take(4)
+                print("messageakis ${product} $requestBody")
+
+                    call.respond(
+                        status = HttpStatusCode.OK,
+                        HomeProductResponse(product, 200, "fetched successfully")
+                    )
+
+
+            } catch (e: Exception) {
+                application.log.error("Failed to get data", e.message)
+                call.respond(status = HttpStatusCode.BadRequest, "${e.message}")
+            }
+        }
+
         post("/GetExclusiveProductById") {
             try {
                 val requestBody = call.receive<SearchByProductId>()
@@ -307,7 +386,7 @@ fun Route.userRoute(
             }
         }
 
-        authenticate("auth-jwt") {
+     //   authenticate("auth-jwt") {
             get("/allusers") {
                 try {
                     val user = db.getAllUsers()
@@ -349,7 +428,7 @@ fun Route.userRoute(
 
     }
 
-}
+//}
 
 data class Message(
     val message: String,
@@ -366,10 +445,24 @@ data class JwtResponse(
 )
 
 data class HomeProductResponse<T>(
-    val list: List<T>,
+    val itemData: List<T>,
     val statusCode: Int,
     val message: String
 )
+data class CountResponse(
+    val image:String,
+    val name:String,
+    val recentOrders: List<orderitem>,
+    val CountResponse: List<ItemCount>,
+    val statusCode: Int,
+    val message: String
+)
+data class ItemCount(
+
+    val name: String,
+    val count: Int
+)
+
 
 data class ProductResponseById<T>(
     val ProductResponse: T?,
@@ -389,4 +482,9 @@ data class BookedOrders<T>(
 
     val statusCode: Int,
     val message: String
+)
+data class DashboardHomeProductsModal(
+    val ls: List<HomeProducts>?,
+    val category: String,
+    val categoryTitle: String
 )
