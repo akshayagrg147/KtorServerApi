@@ -38,3 +38,9 @@ dependencies {
     implementation("io.ktor:ktor-server-cors:$ktor_version")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit:$kotlin_version")
 }
+
+//tasks.withType<Jar> {
+//    manifest {
+//        attributes["Main-Class"] = application.mainClassName
+//    }
+//}
