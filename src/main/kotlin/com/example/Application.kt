@@ -1,6 +1,6 @@
 package com.example
 
-import com.example.plugins.*
+import com.example.routing.*
 import com.example.src.repository.DatabaseFactory
 
 import com.typesafe.config.ConfigFactory
@@ -47,7 +47,6 @@ fun main() {
         }
 
         install(Authentication) {
-
             jwt("auth-jwt") {
 
                 verifier(tokenManager.verifyJWTToken())

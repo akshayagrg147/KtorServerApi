@@ -3,7 +3,7 @@ package com.example
 import com.auth0.jwt.JWT
 import com.auth0.jwt.JWTVerifier
 import com.auth0.jwt.algorithms.Algorithm
-import com.example.src.data.Users
+import com.example.src.modal.Users
 import io.ktor.server.config.*
 import java.util.*
 

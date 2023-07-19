@@ -1,10 +1,7 @@
 package com.example.src.repository
 
-
-
-
-import com.example.src.data.*
-
+import com.example.src.modal.*
+import org.bson.Document
 import org.litote.kmongo.coroutine.CoroutineCollection
 import org.litote.kmongo.coroutine.coroutine
 import org.litote.kmongo.eq
@@ -13,90 +10,125 @@ import org.litote.kmongo.regex
 import java.net.URLEncoder
 
 class DatabaseFactory {
-
-
-
     private val username = URLEncoder.encode("akshaygarg147", "UTF-8")
-
     private val password = URLEncoder.encode("Akshaygarg147@", "UTF-8")
-
-
     private val url = "mongodb+srv://$username:$password@cluster0.qkvbexc.mongodb.net/"
-
-
     private val client = KMongo.createClient().coroutine
-    private val database = client.getDatabase("test")
+    private val database = client.getDatabase("groceryMain")
     val userCollection: CoroutineCollection<Users> = database.getCollection()
     val orderdetails: CoroutineCollection<orderitem> = database.getCollection()
-    val productcollection: CoroutineCollection<HomeProducts> = database.getCollection()
     val home_collections: CoroutineCollection<HomeProducts> = database.getCollection()
-    val allProductCollection:CoroutineCollection<HomeProducts> =database.getCollection()
-    val addExclusiveCollection:CoroutineCollection<exclusiveOffers> =database.getCollection()
-    val addBestSellngCollection:CoroutineCollection<bestSelling> =database.getCollection()
-    val additemsCollections:CoroutineCollection<itemsCollections> =database.getCollection()
+    val exclusiveCollection: CoroutineCollection<exclusiveOffers> = database.getCollection()
+    val bestSellngCollection: CoroutineCollection<bestSelling> = database.getCollection()
+    val adminItemCategory: CoroutineCollection<ProductCategory> = database.getCollection()
 
-    suspend fun addadditemsCollectionsAdminDashboard(request: itemsCollections):itemsCollections{
-        additemsCollections.insertOne(request)
-        return request
-    }
-suspend fun addProductAdminDashboard(request: HomeProducts):HomeProducts{
-    allProductCollection.insertOne(request)
-    return request
-}
-
-    suspend fun addExclusiveAdminDashboard(request: exclusiveOffers):exclusiveOffers{
-        addExclusiveCollection.insertOne(request)
+    suspend fun addCategory(request: ProductCategory): ProductCategory {
+        adminItemCategory.insertOne(request)
         return request
     }
 
-    suspend fun addBestSellingAdminDashboard(request: bestSelling):bestSelling{
-        addBestSellngCollection.insertOne(request)
+    suspend fun getProductCategory(): List<ProductCategory> {
+        return adminItemCategory.find().toList()
+    }
+
+    suspend fun addProductAdminDashboard(request: HomeProducts): HomeProducts {
+        home_collections.insertOne(request)
         return request
     }
+
+    suspend fun addExclusiveAdminDashboard(request: exclusiveOffers): exclusiveOffers {
+        exclusiveCollection.insertOne(request)
+        return request
+    }
+
+    suspend fun addBestSellingAdminDashboard(request: bestSelling): bestSelling {
+        bestSellngCollection.insertOne(request)
+        return request
+    }
+
     suspend fun addUser(users: Users): Users {
         userCollection.insertOne(users)
         return users
     }
+
     suspend fun orderdetails(order: orderitem): orderitem {
-            orderdetails.insertOne(order)
+        orderdetails.insertOne(order)
         return order
     }
 
 
-    suspend fun homeproducts(products: HomeProducts): HomeProducts {
-        home_collections.insertOne(products)
-        return products
-    }
-    suspend fun getAllOrder():List<orderitem> = orderdetails.find().toList()
+    suspend fun getAllOrder(): List<orderitem> = orderdetails.find().toList()
 
-    suspend fun getAllOrderPagination(offset: Int?, limit: Int?):List<orderitem> = orderdetails.find().skip(offset?:0).limit(limit?:0).toList()
-    suspend fun getAllUsers():List<Users> = userCollection.find().toList()
+    suspend fun getAllOrderPagination(offset: Int?, limit: Int?): List<orderitem> =
+        orderdetails.find().skip(offset ?: 0).limit(limit ?: 0).toList()
 
-   //get home products
-   suspend fun getSearchAllProducts( string:Regex,):List<HomeProducts> = home_collections.find(HomeProducts::productName regex  string ).toList()
+    suspend fun getAllUsers(): List<Users> = userCollection.find().toList()
 
-    suspend fun getHomeAllProducts( offset:Int?=0,limit:Int?=0,category: String?=""):List<HomeProducts> = home_collections.find(HomeProducts::category eq category).skip(offset?:0).limit(limit?:0).toList()
+    //get home products
+    suspend fun getSearchAllProducts(string: Regex): List<HomeProducts> =
+        home_collections.find(HomeProducts::productName regex string).toList()
 
-    suspend fun GetPendingProductById(productId:String):HomeProducts?= home_collections.find(HomeProducts::productId  eq productId).first()
-    suspend fun getLastProductId():String?= home_collections.find().toList()[home_collections.find().toList().size-1].productId
-    suspend fun getExclusiveProductBasedId(productId:String):HomeProducts?= home_collections.find(HomeProducts::productId eq productId).first()
+    suspend fun getHomeAllProducts(offset: Int? = 0, limit: Int? = 0, category: String? = ""): List<HomeProducts> =
+        home_collections.find(HomeProducts::item_category_name eq category).skip(offset ?: 0).limit(limit ?: 0).toList()
 
-    suspend fun getBestProductBasedId(productId:String):HomeProducts?= home_collections.find(HomeProducts::productId eq productId).first()
+    suspend fun GetPendingProductById(productId: String): HomeProducts? =
+        home_collections.find(HomeProducts::productId eq productId).first()
+
+    suspend fun getLastProductId(): String? =
+        home_collections.find().toList()[home_collections.find().toList().size - 1].productId
+
+    suspend fun getItemCount(): Int = home_collections.find().toList().size - 1
+    suspend fun getExclusiveProductBasedId(productId: String): HomeProducts? =
+        home_collections.find(HomeProducts::productId eq productId).first()
+
+    suspend fun getBestProductBasedId(productId: String): HomeProducts? =
+        home_collections.find(HomeProducts::productId eq productId).first()
 
 
-    suspend fun getRelatedSearch(price: String):List<HomeProducts> = home_collections.find().toList()
+    suspend fun getRelatedSearch(price: String): List<HomeProducts> = home_collections.find().toList()
 
 
-    suspend fun getaddExclusiveCollection():List<exclusiveOffers> =
-        addExclusiveCollection.find().toList()
-    suspend fun getHomeAllProducts():List<HomeProducts> =
+    suspend fun getAllExclusiveCollection(): List<exclusiveOffers> =
+        exclusiveCollection.find().toList()
+
+    suspend fun getHomeAllProducts(): List<HomeProducts> =
         home_collections.find().toList()
 
-    suspend fun getAlUsers():List<Users> = userCollection.find().toList()
-    suspend fun getProductSubItems(productId:String):List<HomeProducts?> = productcollection.find(HomeProducts::itemCategoryId eq productId).toList()
+    suspend fun getAlUsers(): List<Users> = userCollection.find().toList()
+    suspend fun getProductSubItems(productId: String): List<HomeProducts?> =
+        home_collections.find(HomeProducts::item_category_name eq productId).toList()
 
-    suspend fun getUserByPhone(phone:String):Users? = userCollection.find(Users::phone eq phone).first()
-    suspend fun CheckNumberExist(phone:String):Boolean= userCollection.find(Users::phone eq phone).toList().isNotEmpty()
-    suspend fun deleteUserById(userId: String):Boolean = userCollection.deleteOne(Users::userId eq userId).wasAcknowledged()
-    suspend fun deleteProductById(productId: String):Boolean = allProductCollection.deleteOne(HomeProducts::productId eq productId).wasAcknowledged()
+    suspend fun getUserByPhone(phone: String): Users? = userCollection.find(Users::phone eq phone).first()
+    suspend fun checkNumberExist(phone: String): Boolean =
+        userCollection.find(Users::phone eq phone).toList().isNotEmpty()
+
+    suspend fun deleteUserById(userId: String): Boolean =
+        userCollection.deleteOne(Users::userId eq userId).wasAcknowledged()
+
+    suspend fun deleteProductById(productId: String): Boolean =
+        home_collections.deleteOne(HomeProducts::productId eq productId).wasAcknowledged()
+
+    suspend fun deleteCategory(categoryName: String): Boolean =
+        adminItemCategory.deleteOne(ProductCategory::category eq categoryName).wasAcknowledged()
+
+    suspend fun updateProduct(req: HomeProducts): Long {
+        val update = Document(
+            "\$set",
+            Document("productName", req.productName)
+                .append("orignal_price", req.orignal_price)
+                .append("quantity", req.quantity)
+                .append("productId", req.productId)
+                .append("selling_price", req.selling_price)
+                .append("dashboardDisplay", req.dashboardDisplay)
+                .append("item_category_name", req.item_category_name)
+                .append("item_subcategory_name", req.item_subcategory_name)
+                .append("productDescription", req.ProductDescription)
+                .append("productImage2", req.ProductImage2)
+                .append("productImage1", req.ProductImage1)
+                .append("productImage3", req.ProductImage3)
+        )
+
+        val result = home_collections.updateOne(Document("productId", req.productId), update)
+        return result.modifiedCount
+    }
 }

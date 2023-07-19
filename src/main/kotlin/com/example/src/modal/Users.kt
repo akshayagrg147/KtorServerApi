@@ -1,4 +1,4 @@
-package com.example.src.data
+package com.example.src.modal
 
 import org.bson.codecs.pojo.annotations.BsonId
 import org.bson.types.ObjectId
