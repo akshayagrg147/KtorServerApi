@@ -1,9 +1,11 @@
 package com.example.src.repository
 
+import com.example.features.customer.domain.modal.Users
 import com.example.src.modal.*
 import org.bson.Document
 import org.litote.kmongo.coroutine.CoroutineCollection
 import org.litote.kmongo.coroutine.coroutine
+import org.litote.kmongo.coroutine.insertOne
 import org.litote.kmongo.eq
 import org.litote.kmongo.reactivestreams.KMongo
 import org.litote.kmongo.regex
@@ -21,11 +23,19 @@ class DatabaseFactory {
     val exclusiveCollection: CoroutineCollection<exclusiveOffers> = database.getCollection()
     val bestSellngCollection: CoroutineCollection<bestSelling> = database.getCollection()
     val adminItemCategory: CoroutineCollection<ProductCategory> = database.getCollection()
+    val addCouponRequest:CoroutineCollection<AddCouponRequest> = database.getCollection()
+    val allCoupons:CoroutineCollection<AddCouponRequest> = database.getCollection()
 
     suspend fun addCategory(request: ProductCategory): ProductCategory {
         adminItemCategory.insertOne(request)
         return request
     }
+    suspend fun addCoupon(request:AddCouponRequest):AddCouponRequest{
+        addCouponRequest.insertOne(request)
+        return request
+    }
+
+
 
     suspend fun getProductCategory(): List<ProductCategory> {
         return adminItemCategory.find().toList()
@@ -57,7 +67,7 @@ class DatabaseFactory {
     }
 
 
-    suspend fun getAllOrder(): List<orderitem> = orderdetails.find().toList()
+    suspend fun getAllOrder(status:String): List<orderitem> = orderdetails.find(orderitem::orderStatus eq status.replace("\"", "")).toList()
 
     suspend fun getAllOrderPagination(offset: Int?, limit: Int?): List<orderitem> =
         orderdetails.find().skip(offset ?: 0).limit(limit ?: 0).toList()
@@ -84,6 +94,9 @@ class DatabaseFactory {
     suspend fun getBestProductBasedId(productId: String): HomeProducts? =
         home_collections.find(HomeProducts::productId eq productId).first()
 
+    suspend fun getAllCoupons(): List<AddCouponRequest>? =
+        allCoupons.find().toList()
+
 
     suspend fun getRelatedSearch(price: String): List<HomeProducts> = home_collections.find().toList()
 
@@ -95,8 +108,29 @@ class DatabaseFactory {
         home_collections.find().toList()
 
     suspend fun getAlUsers(): List<Users> = userCollection.find().toList()
+
+    suspend fun setOrderStatus(req: orderitem): Long {
+        val update = Document(
+            "\$set",
+            Document("orderId", req.orderId)
+
+                .append("totalOrderValue", req.totalOrderValue)
+
+                .append("orderList", req.orderList)
+                .append("address", req.address)
+                .append("createdDate", req.createdDate)
+                .append("mobilenumber", req.mobilenumber)
+                .append("paymentmode", req.paymentmode)
+                .append("changeTime", req.changeTime)
+                .append("orderStatus", req.orderStatus)
+
+        )
+
+        val result = orderdetails.updateOne(Document("orderId", req.orderId), update)
+        return result.modifiedCount
+    }
     suspend fun getProductSubItems(productId: String): List<HomeProducts?> =
-        home_collections.find(HomeProducts::item_category_name eq productId).toList()
+        home_collections.find(HomeProducts::item_subcategory_name eq productId).toList()
 
     suspend fun getUserByPhone(phone: String): Users? = userCollection.find(Users::phone eq phone).first()
     suspend fun checkNumberExist(phone: String): Boolean =
@@ -111,6 +145,13 @@ class DatabaseFactory {
     suspend fun deleteCategory(categoryName: String): Boolean =
         adminItemCategory.deleteOne(ProductCategory::category eq categoryName).wasAcknowledged()
 
+//    suspend fun deleteProductsBasedCategory(categoryName: String): Boolean =
+//        home_collections.deleteMany(HomeProducts:: eq categoryName).wasAcknowledged()
+    suspend fun deleteCoupon(couponName: String): Boolean =
+        allCoupons.deleteOne(ProductCategory::category eq couponName).wasAcknowledged()
+
+
+
     suspend fun updateProduct(req: HomeProducts): Long {
         val update = Document(
             "\$set",
@@ -122,10 +163,14 @@ class DatabaseFactory {
                 .append("dashboardDisplay", req.dashboardDisplay)
                 .append("item_category_name", req.item_category_name)
                 .append("item_subcategory_name", req.item_subcategory_name)
-                .append("productDescription", req.ProductDescription)
-                .append("productImage2", req.ProductImage2)
-                .append("productImage1", req.ProductImage1)
-                .append("productImage3", req.ProductImage3)
+                .append("productDescription", req.productDescription)
+                .append("productImage2", req.productImage2)
+                .append("productImage1", req.productImage1)
+                .append("productImage3", req.productImage3)
+                .append("productImage3", req.productImage3)
+                .append("productImage3", req.productImage3)
+                .append("productBestSelling", req.productBestSelling)
+                .append("productExclusiveSelling", req.productExclusiveSelling)
         )
 
         val result = home_collections.updateOne(Document("productId", req.productId), update)

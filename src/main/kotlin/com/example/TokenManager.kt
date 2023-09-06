@@ -3,39 +3,37 @@ package com.example
 import com.auth0.jwt.JWT
 import com.auth0.jwt.JWTVerifier
 import com.auth0.jwt.algorithms.Algorithm
-import com.example.src.modal.Users
+import com.example.features.customer.domain.modal.Users
+import com.example.utils.Constant
 import io.ktor.server.config.*
+import java.security.SecureRandom
 import java.util.*
 
-class TokenManager(config: HoconApplicationConfig) {
-    private val audience = config.property("audience").getString()
-    private val secret = config.property("secret").getString()
-    private val issuer = config.property("issuer").getString()
-    private val expirationDate = System.currentTimeMillis() + 600000;
+data class JwtConfig(val secret: String, val issuer: String, val audience: String)
 
-    fun generateJWTToken(user: Users): String {
+fun generateToken(user: Users, jwtConfig: JwtConfig): String {
+    val now = Date()
+    val expiresAt = Date(now.time + (24 * 60 * 60 * 1000 )) // Token expires in 24 hours  into 30 days
 
-        return JWT.create()
-            .withAudience(audience)
-            .withIssuer(issuer)
-            .withClaim("username", user.email)
-            .withExpiresAt(Date(expirationDate))
-            .sign(Algorithm.HMAC256(secret))
-    }
-    fun generateJWTExistToken(mobileNumber: String): String {
-
-        return JWT.create()
-            .withAudience(audience)
-            .withIssuer(issuer)
-            .withClaim("JwtMobile", mobileNumber)
-            .withExpiresAt(Date(expirationDate))
-            .sign(Algorithm.HMAC256(secret))
-    }
-
-    fun verifyJWTToken(): JWTVerifier {
-        return JWT.require(Algorithm.HMAC256(secret))
-            .withAudience(audience)
-            .withIssuer(issuer)
-            .build()
-    }
+    return JWT.create()
+        .withSubject(user.userId)
+        .withAudience(jwtConfig.audience)
+        .withIssuer(jwtConfig.issuer)
+        .withExpiresAt(expiresAt)
+        .sign(Algorithm.HMAC256(jwtConfig.secret))
 }
+
+fun generateRandomString(length: Int): String {
+    val random = SecureRandom()
+    val bytes = ByteArray(length)
+    random.nextBytes(bytes)
+    return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes)
+}
+
+val secretKey = generateRandomString(32)
+
+val jwtConfig = JwtConfig(
+    secret = secretKey,
+    issuer = Constant.ISSUER,
+    audience = Constant.AUDIENCE
+)
