@@ -10,6 +10,7 @@ data class HomeProducts(
     var productId: String = "",
     var productBestSelling:Boolean=false,
     var productExclusiveSelling:Boolean=false,
+    var quantityInstructionController: String? = null,
 
     var productDescription: String? = null,
     var selling_price: String? = null,
@@ -18,8 +19,10 @@ data class HomeProducts(
     var rating: List<subrating> = emptyList<subrating>(),
     var item_subcategory_name: String? = null,
     var changeTime: Double? = null,
+    var pincode: String?=null
 )
-
+data class adminAcess(var email:String?=null,var password:String?=null,var pincode:String?=null,var name:String?=null,var price:String?=null,val city: String?=null ,val deliveryContactNumber:String?=null)
+data class adminAvailable(var pincode:String?=null,var price:String?=null,val city: String? ,val deliveryContactNumber:String)
 data class exclusiveOffers(
     var productName: String = "",
     var orignal_price: String = "",
@@ -52,18 +55,31 @@ data class bestSelling(
     var categoryType: Int = 0
 )
 
-data class SearchByProductId(val ProductId: String? = null)
+data class SearchByProductId(val ProductId: String? = null,val pincode: String?)
 data class CityAailibilty(val city: String? = null)
 data class ProductCategory(
     val category: String? = null,
     val imageUrl: String? = null,
-    val subCategoryList: List<SubCategoryItem>
+    val subCategoryList: List<SubCategoryItem>,
+    val pincode:String?=null
+)
+data class BannerCategory(
+    val bannercategory1: String? = null,
+    val imageUrl1: String? = null,
+    val bannercategory2: String? = null,
+    val imageUrl2: String? = null,
+    val bannercategory3: String? = null,
+    val imageUrl3: String? = null,
+    val subCategoryList: List<SubCategoryItem>?= emptyList(),
+    val pincode:String?=null,
+    var changetime:String?=null
+
 )
 
 data class SubCategoryItem(val name: String?, val subCategoryUrl: String? = null)
 
-data class RelatedSerachByPriceAndCategory(val Price: String? = null, val category: String? = null)
-data class UserRequest(val phone: String? = null)
+data class RelatedSerachByPriceAndCategory(val Price: String? = null, val category: String? = null,val pincode:String?=null)
+data class UserRequest(val phone: String? = null,val pincode:String?=null)
 data class PaginationPassing(val offset: Int? = 0, val limit: Int? = 0)
 data class subrating(
     val remark: String? = null,
@@ -81,7 +97,8 @@ data class orderitem(
     val mobilenumber: String,
     var createdDate: String,
     var orderId: String,
-    var orderStatus:String
+    var orderStatus:String?=null,
+            var pincode:String?=null
 )
 
 data class Orders(
@@ -107,6 +124,11 @@ data class JwtResponse(
 
 data class CommonListResponse<T>(
     val itemData: List<T>,
+    val statusCode: Int,
+    val message: String
+)
+data class CommonClassResponse<T>(
+    val response: T,
     val statusCode: Int,
     val message: String
 )

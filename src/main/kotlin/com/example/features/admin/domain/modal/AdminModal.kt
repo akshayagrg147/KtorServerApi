@@ -10,4 +10,4 @@ data class RequestCoupon(val couponName: String)
 data class OrderStatusRequest(val status: String)
 data class AddCouponRequest(
     var couponTitle:String, val couponCode:String,  val discountPercentage:String,
-    val discountedAmount:String, val minimumPurchase:String, val startDate:String, val expireDate:String)
+    val discountedAmount:String, val minimumPurchase:String, val startDate:String, val expireDate:String,val pincode:String?=null)

@@ -5,7 +5,6 @@ import com.example.src.modal.*
 import org.bson.Document
 import org.litote.kmongo.coroutine.CoroutineCollection
 import org.litote.kmongo.coroutine.coroutine
-import org.litote.kmongo.coroutine.insertOne
 import org.litote.kmongo.eq
 import org.litote.kmongo.reactivestreams.KMongo
 import org.litote.kmongo.regex
@@ -20,14 +19,20 @@ class DatabaseFactory {
     val userCollection: CoroutineCollection<Users> = database.getCollection()
     val orderdetails: CoroutineCollection<orderitem> = database.getCollection()
     val home_collections: CoroutineCollection<HomeProducts> = database.getCollection()
-    val exclusiveCollection: CoroutineCollection<exclusiveOffers> = database.getCollection()
+    val adminAcessCollection: CoroutineCollection<adminAcess> = database.getCollection()
+   val exclusiveCollection: CoroutineCollection<exclusiveOffers> = database.getCollection()
     val bestSellngCollection: CoroutineCollection<bestSelling> = database.getCollection()
     val adminItemCategory: CoroutineCollection<ProductCategory> = database.getCollection()
+    val adminBannerCategory: CoroutineCollection<BannerCategory> = database.getCollection()
     val addCouponRequest:CoroutineCollection<AddCouponRequest> = database.getCollection()
     val allCoupons:CoroutineCollection<AddCouponRequest> = database.getCollection()
 
     suspend fun addCategory(request: ProductCategory): ProductCategory {
         adminItemCategory.insertOne(request)
+        return request
+    }
+    suspend fun addBannerCategory(request: BannerCategory): BannerCategory {
+        adminBannerCategory.insertOne(request)
         return request
     }
     suspend fun addCoupon(request:AddCouponRequest):AddCouponRequest{
@@ -37,8 +42,11 @@ class DatabaseFactory {
 
 
 
-    suspend fun getProductCategory(): List<ProductCategory> {
-        return adminItemCategory.find().toList()
+    suspend fun getProductCategory(pincode:String): List<ProductCategory> {
+        return adminItemCategory.find(ProductCategory::pincode eq pincode.replace("\"", "")).toList()
+    }
+    suspend fun getBannerCategory(pincode:String): List<BannerCategory> {
+        return adminBannerCategory.find(BannerCategory::pincode eq pincode.replace("\"", "")).toList()
     }
 
     suspend fun addProductAdminDashboard(request: HomeProducts): HomeProducts {
@@ -67,19 +75,20 @@ class DatabaseFactory {
     }
 
 
-    suspend fun getAllOrder(status:String): List<orderitem> = orderdetails.find(orderitem::orderStatus eq status.replace("\"", "")).toList()
+    suspend fun getAllOrder(status:String,mobileNumber:String?=null,pincode:String?=null): List<orderitem> = orderdetails.find(orderitem::pincode eq pincode?.replace("\"", ""),orderitem::orderStatus eq status.replace("\"", ""),if(mobileNumber?.isNotEmpty()==true)orderitem::mobilenumber eq mobileNumber.replace("\"", "") else null).toList()
 
-    suspend fun getAllOrderPagination(offset: Int?, limit: Int?): List<orderitem> =
-        orderdetails.find().skip(offset ?: 0).limit(limit ?: 0).toList()
+    suspend fun getAllOrderPagination(skip: Int?, limit: Int?,pincode: String): List<orderitem> =
+        orderdetails.find(orderitem::pincode eq pincode.replace("\"", "")).skip(skip ?: 0).limit(limit ?: 0).toList()
 
     suspend fun getAllUsers(): List<Users> = userCollection.find().toList()
 
-    //get home products
-    suspend fun getSearchAllProducts(string: Regex): List<HomeProducts> =
-        home_collections.find(HomeProducts::productName regex string).toList()
 
-    suspend fun getHomeAllProducts(offset: Int? = 0, limit: Int? = 0, category: String? = ""): List<HomeProducts> =
-        home_collections.find(HomeProducts::item_category_name eq category).skip(offset ?: 0).limit(limit ?: 0).toList()
+    //get home products
+    suspend fun getSearchAllProducts(string: Regex, pincode: String?): List<HomeProducts> =
+        home_collections.find(HomeProducts::productName regex string,HomeProducts::pincode eq pincode).toList()
+
+    suspend fun getHomeAllProducts(offset: Int? = 0, limit: Int? = 0, category: String? = "",pincode: String?): List<HomeProducts> =
+        home_collections.find(if(category!=null)HomeProducts::item_subcategory_name eq category.replace("\"", "") else null,HomeProducts::pincode eq pincode?.replace("\"", "")).skip(offset ?: 0).limit(limit ?: 0).toList()
 
     suspend fun GetPendingProductById(productId: String): HomeProducts? =
         home_collections.find(HomeProducts::productId eq productId).first()
@@ -94,20 +103,22 @@ class DatabaseFactory {
     suspend fun getBestProductBasedId(productId: String): HomeProducts? =
         home_collections.find(HomeProducts::productId eq productId).first()
 
-    suspend fun getAllCoupons(): List<AddCouponRequest>? =
-        allCoupons.find().toList()
+    suspend fun getAllCoupons(pincode: String?): List<AddCouponRequest>? =
+        allCoupons.find(AddCouponRequest::pincode eq pincode).toList()
 
 
-    suspend fun getRelatedSearch(price: String): List<HomeProducts> = home_collections.find().toList()
+    suspend fun getRelatedSearch(pincode: String): List<HomeProducts> = home_collections.find(HomeProducts::pincode eq pincode).toList()
 
 
     suspend fun getAllExclusiveCollection(): List<exclusiveOffers> =
         exclusiveCollection.find().toList()
 
-    suspend fun getHomeAllProducts(): List<HomeProducts> =
-        home_collections.find().toList()
+    suspend fun getHomeAllProducts1(pincode:String): List<HomeProducts> =
+        home_collections.find(HomeProducts::pincode eq pincode).toList()
 
     suspend fun getAlUsers(): List<Users> = userCollection.find().toList()
+
+    suspend fun getAllAdmins(): List<adminAcess> = adminAcessCollection.find().toList()
 
     suspend fun setOrderStatus(req: orderitem): Long {
         val update = Document(
@@ -121,6 +132,7 @@ class DatabaseFactory {
                 .append("createdDate", req.createdDate)
                 .append("mobilenumber", req.mobilenumber)
                 .append("paymentmode", req.paymentmode)
+                .append("pincode", req.pincode)
                 .append("changeTime", req.changeTime)
                 .append("orderStatus", req.orderStatus)
 
@@ -129,15 +141,35 @@ class DatabaseFactory {
         val result = orderdetails.updateOne(Document("orderId", req.orderId), update)
         return result.modifiedCount
     }
-    suspend fun getProductSubItems(productId: String): List<HomeProducts?> =
-        home_collections.find(HomeProducts::item_subcategory_name eq productId).toList()
+    suspend fun getProductSubItems(productId: String, pincode: String?): List<HomeProducts?> =
+        home_collections.find(HomeProducts::item_subcategory_name eq productId,HomeProducts::pincode eq pincode).toList()
 
-    suspend fun getUserByPhone(phone: String): Users? = userCollection.find(Users::phone eq phone).first()
+    suspend fun getUserByPhone(phone: String): Users? = userCollection.find(Users::phone eq phone.replace("\"", "")).first()
     suspend fun checkNumberExist(phone: String): Boolean =
         userCollection.find(Users::phone eq phone).toList().isNotEmpty()
 
     suspend fun deleteUserById(userId: String): Boolean =
         userCollection.deleteOne(Users::userId eq userId).wasAcknowledged()
+
+    suspend fun userCheck(email:String,passord:String):adminAcess =
+        adminAcessCollection.find(( adminAcess::password eq passord)).first()!!
+
+    suspend fun freeDeliveryPriceUpdateUpdate(email:String,passord: String,name:String,pincode:String,price:String):Long {
+        val update = Document(
+            "\$set",
+            Document("email", email)
+                .append("password", passord)
+                .append("pincode", pincode)
+                .append("name", name)
+                .append("price", price)
+
+        )
+
+        val result = adminAcessCollection.updateOne(Document("email", email), update)
+        return result.modifiedCount
+    }
+
+
 
     suspend fun deleteProductById(productId: String): Boolean =
         home_collections.deleteOne(HomeProducts::productId eq productId).wasAcknowledged()
@@ -145,10 +177,15 @@ class DatabaseFactory {
     suspend fun deleteCategory(categoryName: String): Boolean =
         adminItemCategory.deleteOne(ProductCategory::category eq categoryName).wasAcknowledged()
 
+    suspend fun deleteBannerategory(categoryName: String): Boolean =
+        if(categoryName.split("__")[1] == "bannercategory1")
+        adminItemCategory.deleteOne(BannerCategory::bannercategory1 eq categoryName).wasAcknowledged()
+    else
+            adminItemCategory.deleteOne(BannerCategory::bannercategory2 eq categoryName).wasAcknowledged()
+
 //    suspend fun deleteProductsBasedCategory(categoryName: String): Boolean =
 //        home_collections.deleteMany(HomeProducts:: eq categoryName).wasAcknowledged()
-    suspend fun deleteCoupon(couponName: String): Boolean =
-        allCoupons.deleteOne(ProductCategory::category eq couponName).wasAcknowledged()
+    suspend fun deleteCoupon(couponName: String): Boolean = allCoupons.deleteOne(AddCouponRequest::couponCode eq couponName).wasAcknowledged()
 
 
 
@@ -170,10 +207,46 @@ class DatabaseFactory {
                 .append("productImage3", req.productImage3)
                 .append("productImage3", req.productImage3)
                 .append("productBestSelling", req.productBestSelling)
+                .append("quantityInstructionController", req.quantityInstructionController)
                 .append("productExclusiveSelling", req.productExclusiveSelling)
+                .append("pincode",req.pincode)
         )
 
         val result = home_collections.updateOne(Document("productId", req.productId), update)
         return result.modifiedCount
     }
+
+    suspend fun updateBannerCategory(req: BannerCategory): Long {
+        try {
+            val update = Document(
+                "\$set",
+                Document("bannercategory1", req.bannercategory1)
+                    .append("imageUrl1", req.imageUrl1)
+                    .append("bannercategory2", req.bannercategory2)
+                    .append("imageUrl2", req.imageUrl2)
+                    .append("bannercategory3", req.bannercategory3)
+                    .append("imageUrl3", req.imageUrl3)
+                    .append("pincode", req.pincode)
+                    .append("changetime", req.changetime)
+                    .append("subCategoryList", req.subCategoryList?.map { subCategory ->
+                        Document()
+                            .append("name", subCategory.name)
+                            .append("subCategoryUrl", subCategory.subCategoryUrl)
+                    })
+            )
+
+            val result = adminBannerCategory.updateOne(Document("bannercategory1", req.bannercategory1), update)
+
+            return result.modifiedCount
+        } catch (e: Exception) {
+            print("update_banner_Error ${e.message}")
+            // Handle exceptions here (e.g., log the error).
+            // You may want to rethrow the exception or return an error code.
+            e.printStackTrace()
+            return 0L
+        }
+    }
+
+
+
 }

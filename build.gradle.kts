@@ -7,6 +7,7 @@ plugins {
     kotlin("jvm") version "1.8.21"
     id("io.ktor.plugin") version "2.3.1"
     kotlin("plugin.serialization") version "1.8.21"
+    id("com.github.johnrengelman.shadow") version "7.1.2" // Add the Shadow Plugin
 }
 
 group = "com.example"
@@ -22,6 +23,12 @@ repositories {
     mavenCentral()
 }
 
+ktor {
+    fatJar {
+        archiveFileName.set("fat.jar")
+    }
+}
+
 dependencies {
     implementation("io.ktor:ktor-server-content-negotiation-jvm:$ktor_version")
     implementation("io.ktor:ktor-server-core-jvm:$ktor_version")
@@ -29,7 +36,7 @@ dependencies {
     implementation("io.ktor:ktor-server-netty-jvm:$ktor_version")
     implementation("ch.qos.logback:logback-classic:$logback_version")
     testImplementation("io.ktor:ktor-server-tests-jvm:$ktor_version")
-    testImplementation("org.jetbrains.kotlin:kotlin-test: String by project-junit:$kotlin_version")
+    testImplementation("org.jetbrains.kotlin:kotlin-test:$kotlin_version")
     implementation("org.litote.kmongo:kmongo-coroutine:$kmongo_version")
 
     // Koin for Ktor
@@ -52,10 +59,9 @@ dependencies {
     implementation("io.jsonwebtoken:jjwt-api:0.11.5")
     implementation("io.jsonwebtoken:jjwt-impl:0.11.5")
     implementation("io.jsonwebtoken:jjwt-jackson:0.11.5")
+    implementation("io.ktor:ktor-client-core:1.6.5")
+    implementation("io.ktor:ktor-client-okhttp:1.6.5")
+
+
 }
 
-//tasks.withType<Jar> {
-//    manifest {
-//        attributes["Main-Class"] = application.mainClassName
-//    }
-//}

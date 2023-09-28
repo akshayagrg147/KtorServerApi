@@ -2,11 +2,11 @@ package com.example
 
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
-import com.example.routing.*
+import com.example.features.admin.domain.route.adminRoute
+import com.example.features.customer.domain.route.userRoute
 import com.example.src.repository.DatabaseFactory
 
 import com.typesafe.config.ConfigFactory
-import io.jsonwebtoken.Jwts.header
 import io.ktor.http.*
 import io.ktor.serialization.gson.*
 import io.ktor.server.application.*
@@ -16,14 +16,13 @@ import io.ktor.server.config.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import io.ktor.server.plugins.contentnegotiation.*
-import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.http.HttpMethod
 import io.ktor.server.plugins.cors.routing.*
 
 
 fun main() {
-    embeddedServer(Netty, port = 8084, host = "0.0.0.0") {
+    embeddedServer(Netty, port = 8081, host = "0.0.0.0") {
         val databaseFactory = DatabaseFactory()
         val config = HoconApplicationConfig(ConfigFactory.load())
         install(ContentNegotiation){

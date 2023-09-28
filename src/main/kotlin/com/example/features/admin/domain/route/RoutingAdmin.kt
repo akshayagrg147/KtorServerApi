@@ -1,32 +1,62 @@
-package com.example.routing
+package com.example.features.admin.domain.route
 
 
-import com.example.generateToken
-import com.example.jwtConfig
 import com.example.src.modal.*
 import com.example.src.repository.DatabaseFactory
+import com.example.utils.apiClassResponse
 import com.example.utils.apiListResponse
 import com.example.utils.apiResponse
-import com.typesafe.config.ConfigFactory
 import io.ktor.http.*
 import io.ktor.server.application.*
-import io.ktor.server.config.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
+import java.text.SimpleDateFormat
+import java.util.*
 
 fun Route.adminRoute(
     db: DatabaseFactory
 ) {
-
     route("/Admin") {
-        get("/") {
-            call.respond("Hello world")
+        post("/Login") {
+            try {
+                val value = call.receive<RequestLoginBody>()
+                val product = db.userCheck(value.email, value.password)
+                if (product.pincode != null) {
+                    apiClassResponse(
+                        statusCode = 200,
+                        message = "Successfully Logged In",
+                        status = true,
+                        response = product,
+                        statusCodeApi = HttpStatusCode.OK,
+                    )
+
+                } else {
+                    apiClassResponse(
+                        statusCode = 200,
+                        message = "Successfully Logged In",
+                        status = true,
+                        response = adminAcess(null, null, null),
+                        statusCodeApi = HttpStatusCode.OK,
+                    )
+                }
+            } catch (e: Exception) {
+                apiResponse(
+                    statusCode = 400,
+                    message = "${e.message}",
+                    status = false,
+                    statusCodeApi = HttpStatusCode.BadRequest,
+                )
+
+            }
         }
         post("/updateProduct") {
-            var requestBody = call.receive<HomeProducts>()
-            requestBody.changeTime=System.currentTimeMillis().toDouble()
+            val requestBody = call.receive<HomeProducts>()
+            requestBody.changeTime = System.currentTimeMillis().toDouble()
             if (db.updateProduct(requestBody) > 0) {
                 call.respond(
                     status = HttpStatusCode.OK,
@@ -40,9 +70,23 @@ fun Route.adminRoute(
             }
 
         }
+        post("/freeDelivery") {
+            val requestBody = call.receive<adminAcess>()
+            if (db.freeDeliveryPriceUpdateUpdate(requestBody.email!!,requestBody.password!!,requestBody.name!!,requestBody.pincode!!,requestBody.price!!) > 0) {
+                call.respond(
+                    status = HttpStatusCode.OK,
+                    ApiResponse(status = true, statusCode = 200, message = "Updated Delivery Amount Successfully")
+                )
+            } else {
+                call.respond(
+                    status = HttpStatusCode.OK,
+                    ApiResponse(status = false, statusCode = 200, message = "something went wrong")
+                )
+            }
+
+        }
         delete("deleteProduct/{productId}") {
             val id = call.parameters["productId"]
-
             try {
                 val delete = db.deleteProductById(id!!)
                 if (delete) {
@@ -69,19 +113,40 @@ fun Route.adminRoute(
             }
         }
         delete("deleteCategory/{categoryName}") {
-            println("id_is_called")
             val id = call.parameters["categoryName"]
-            println("id_is_${id}")
-
             try {
                 val delete = db.deleteCategory(id!!)
                 if (delete) {
-
                     call.respond(
                         status = HttpStatusCode.OK,
                         ApiResponse(status = true, statusCode = 200, message = "Deleted category Successfully")
                     )
 
+                } else {
+                    call.respond(
+                        status = HttpStatusCode.OK,
+                        ApiResponse(status = true, statusCode = 200, message = "category not Deleted")
+                    )
+                }
+            } catch (e: Exception) {
+                apiResponse(
+                    statusCode = 400,
+                    message = "${e.message}",
+                    status = false,
+                    statusCodeApi = HttpStatusCode.BadRequest,
+                )
+
+            }
+        }
+        delete("deleteBanner/{categoryName}") {
+            val id = call.parameters["categoryName"]
+            try {
+                val delete = db.deleteBannerategory(id!!)
+                if (delete) {
+                    call.respond(
+                        status = HttpStatusCode.OK,
+                        ApiResponse(status = true, statusCode = 200, message = "Deleted category Successfully")
+                    )
                 } else {
                     call.respond(
                         status = HttpStatusCode.OK,
@@ -101,14 +166,42 @@ fun Route.adminRoute(
         }
         get("/AllOrdersByPages") {
             try {
+                val pinCode = call.parameters["pincode"]
                 val skip = call.parameters["skip"]
                 val limit = call.parameters["limit"]
-                val orders = db.getAllOrderPagination(Integer.parseInt(skip), Integer.parseInt(limit))
+                val orders =
+                    db.getAllOrderPagination(Integer.parseInt(skip), Integer.parseInt(limit), pinCode.toString())
                 apiListResponse(
-                    HttpStatusCode.OK, statusCode = 200, ls = orders,
-                    message = "fetched successfully",
-                    status = true
+                    HttpStatusCode.OK, statusCode = 200, ls = orders, message = "fetched successfully", status = true
                 )
+
+            } catch (e: Exception) {
+                apiResponse(
+                    statusCode = 400,
+                    message = "${e.message}",
+                    status = false,
+                    statusCodeApi = HttpStatusCode.BadRequest,
+                )
+
+            }
+
+        }
+        get("/SearchAllProducts") {
+            try {
+                val value = call.parameters["query"]
+                val pincode = call.parameters["pincode"]
+                if (value?.isNotEmpty() == true) {
+                    val regex = Regex("${value}.*", RegexOption.IGNORE_CASE)
+                    val product = db.getSearchAllProducts(regex, pincode)
+                    apiListResponse(
+                        HttpStatusCode.OK,
+                        statusCode = 200,
+                        ls = product,
+                        message = "fetched successfully",
+                        status = true
+                    )
+                }
+
 
             } catch (e: Exception) {
                 apiResponse(
@@ -122,11 +215,14 @@ fun Route.adminRoute(
         }
         get("/allProducts") {
             try {
-                val product = db.getHomeAllProducts()
+                val skip = call.parameters["skip"]
+                val limit = call.parameters["limit"]
+                val pincode = call.parameters["pincode"]
+                val product = db.getHomeAllProducts(
+                    Integer.parseInt(skip), Integer.parseInt(limit), null, pincode = pincode
+                )
                 apiListResponse(
-                    HttpStatusCode.OK, statusCode = 200, ls = product,
-                    message = "fetched successfully",
-                    status = true
+                    HttpStatusCode.OK, statusCode = 200, ls = product, message = "fetched successfully", status = true
                 )
 
             } catch (e: Exception) {
@@ -139,52 +235,18 @@ fun Route.adminRoute(
 
             }
         }
-        post("/Login") {
+        delete("deleteCoupon/{couponName}") {
+            val name = call.parameters["couponName"]
             try {
-                val value = call.receive<RequestLoginBody>()
-                if (value.email == "akshaygarg147@gmail.com" && value.password == "123456789") {
-                    apiResponse(
-                        statusCode = 200,
-                        message = "Successfully Logged In",
-                        status = true,
-                        statusCodeApi = HttpStatusCode.OK,
-                    )
-
-                } else {
-                    apiResponse(
-                        statusCode = 200,
-                        message = "Incorrect Information's",
-                        status = false,
-                        statusCodeApi = HttpStatusCode.OK
-                    )
-                }
-            } catch (e: Exception) {
-                apiResponse(
-                    statusCode = 400,
-                    message = "${e.message}",
-                    status = false,
-                    statusCodeApi = HttpStatusCode.BadRequest,
-                )
-
-            }
-        }
-
-
-            delete("deleteCoupon/{couponName}") {
-                val name = call.parameters["couponName"]
-            try {
-
-                if (name?.isNotEmpty()==true) {
-                    val isCouponDeleted=db.deleteCoupon(name)
-                    println("${isCouponDeleted} ${name}")
-                    if(isCouponDeleted)
-                    apiResponse(
+                if (name?.isNotEmpty() == true) {
+                    val isCouponDeleted = db.deleteCoupon(name)
+                    if (isCouponDeleted) apiResponse(
                         statusCode = 200,
                         message = "Deleted Coupon",
                         status = true,
                         statusCodeApi = HttpStatusCode.OK,
                     )
-                    else{
+                    else {
                         apiResponse(
                             statusCode = 400,
                             message = "Coupon code not exist",
@@ -192,7 +254,6 @@ fun Route.adminRoute(
                             statusCodeApi = HttpStatusCode.BadRequest,
                         )
                     }
-
                 } else {
                     apiResponse(
                         statusCode = 200,
@@ -208,14 +269,23 @@ fun Route.adminRoute(
                     status = false,
                     statusCodeApi = HttpStatusCode.BadRequest,
                 )
-
             }
         }
-        post("/allCoupons") {
+        get("/allCoupons") {
             try {
-                val couponResponse = db.getAllCoupons()
+                val pincode = call.parameters["pincode"]
+                val couponResponse = db.getAllCoupons(pincode)
+                val currentDateString = SimpleDateFormat("yyyy-MM-dd").format(Date())
+                // Compare the two date strings
+                val dateFormat = SimpleDateFormat("yyyy-MM-dd")
+                val filterCoupons = couponResponse?.filter { coupon ->
+                    val inputDate = dateFormat.parse(coupon.expireDate)
+                    inputDate > dateFormat.parse(currentDateString)
+                }
                 apiListResponse(
-                    HttpStatusCode.OK, statusCode = 200, ls = couponResponse?: emptyList(),
+                    HttpStatusCode.OK,
+                    statusCode = 200,
+                    ls = filterCoupons ?: emptyList(),
                     message = "fetched successfully",
                     status = true
                 )
@@ -227,43 +297,42 @@ fun Route.adminRoute(
                     status = false,
                     statusCodeApi = HttpStatusCode.BadRequest,
                 )
-
             }
         }
-        post("/AddCoupon"){
+        post("/AddCoupon") {
             try {
-                val couponRequest=call.receive<AddCouponRequest>()
-
-                println("addCoupon Request is $couponRequest")
-
-                if(
-                    couponRequest.couponCode.isNotEmpty()&&
-                    couponRequest.couponTitle.isNotEmpty()&&
+                val couponRequest = call.receive<AddCouponRequest>()
+                if (couponRequest.couponCode.isNotEmpty() && couponRequest.couponTitle.isNotEmpty() &&
 //                    couponRequest.discountPercentage.isNotEmpty()&&
 //                    couponRequest.discountedAmount.isNotEmpty()&&
-                    couponRequest.minimumPurchase.isNotEmpty()&&
-                    couponRequest.startDate.isNotEmpty()&&
-                    couponRequest.expireDate.isNotEmpty() ){
-                    db.addCoupon(couponRequest)
-                    apiResponse(
-                        statusCode = 200,
-                        message = "Successfully Saved Coupons",
-                        status = true,
-                        statusCodeApi = HttpStatusCode.OK,
-                    )
+                    couponRequest.minimumPurchase.isNotEmpty() && couponRequest.startDate.isNotEmpty() && couponRequest.expireDate.isNotEmpty()
+                ) {
+                    if (couponRequest.startDate != couponRequest.expireDate) {
+                        db.addCoupon(couponRequest)
+                        apiResponse(
+                            statusCode = 200,
+                            message = "Added coupon Successfully",
+                            status = true,
+                            statusCodeApi = HttpStatusCode.OK,
+                        )
+                    } else {
+                        apiResponse(
+                            statusCode = 400,
+                            message = "coupon Code can not be same",
+                            status = true,
+                            statusCodeApi = HttpStatusCode.BadRequest,
+                        )
+                    }
 
-                }
-                else{
+                } else {
                     apiResponse(
-                        statusCode = 200,
+                        statusCode = 400,
                         message = "Incorrect Information's",
                         status = false,
-                        statusCodeApi = HttpStatusCode.OK
+                        statusCodeApi = HttpStatusCode.BadRequest
                     )
                 }
-
-            }
-            catch (e:Exception){
+            } catch (e: Exception) {
                 apiResponse(
                     statusCode = 400,
                     message = "${e.message}",
@@ -275,11 +344,10 @@ fun Route.adminRoute(
         }
         post("/AddProduct") {
             try {
-                var requestBody = call.receive<HomeProducts>()
+                val requestBody = call.receive<HomeProducts>()
                 //BestSelling
                 val specialCategories = listOf("best", "exclusive", "Essential Products")
                 if (specialCategories.any { requestBody.item_category_name?.contains(it, ignoreCase = true) == true }) {
-                    println("request_catch_from_AddProduct ${db.getItemCount()}")
                     if (db.getItemCount() <= 0) {
                         requestBody.productId = 1.toString()
                     } else {
@@ -300,11 +368,9 @@ fun Route.adminRoute(
                         dashboardDisplay = requestBody.dashboardDisplay
                         rating = requestBody.rating
                         item_category_name = requestBody.item_category_name
-
                     }
 
-                    if (requestBody.item_category_name?.contains("best") == true)
-                        db.addBestSellingAdminDashboard(obj)
+                    if (requestBody.item_category_name?.contains("best") == true) db.addBestSellingAdminDashboard(obj)
                     else {
                         val exclusive = exclusiveOffers().apply {
                             productName = requestBody.productName
@@ -322,7 +388,7 @@ fun Route.adminRoute(
                         }
                         db.addExclusiveAdminDashboard(exclusive)
                     }
-                    db.addProductAdminDashboard(requestBody);
+                    db.addProductAdminDashboard(requestBody)
                     call.respond(
                         status = HttpStatusCode.OK,
                         ApiResponse(status = true, statusCode = 200, message = "Added product Successfully")
@@ -330,7 +396,6 @@ fun Route.adminRoute(
                 }
                 //itemcollection
                 else {
-                    println("request_catch_from_AddProduct else ${db.getItemCount()} ")
                     if (db.getItemCount() <= 0) {
                         requestBody.productId = 1.toString()
                     } else {
@@ -338,7 +403,6 @@ fun Route.adminRoute(
                         value = (value.toInt() + 1).toString()
                         requestBody.productId = value
                     }
-                    println("request_catch_from_AddProduct else ${requestBody}  ")
                     db.addProductAdminDashboard(requestBody)
                     apiResponse(
                         statusCode = 200,
@@ -361,14 +425,30 @@ fun Route.adminRoute(
 
             }
         }
-            get("/getProductCategory") {
+        get("/getProductCategory") {
             try {
-                val product = db.getProductCategory()
-
+                val pincode = call.parameters["pincode"]
+                val product = db.getProductCategory(pincode.toString())
                 apiListResponse(
-                    HttpStatusCode.OK, statusCode = 200, ls = product,
-                    message = "fetched successfully",
-                    status = true
+                    HttpStatusCode.OK, statusCode = 200, ls = product, message = "fetched successfully", status = true
+                )
+
+
+            } catch (e: Exception) {
+                apiResponse(
+                    statusCode = 400,
+                    message = "${e.message}",
+                    status = false,
+                    statusCodeApi = HttpStatusCode.BadRequest,
+                )
+            }
+        }
+        get("/getBannerCategory") {
+            try {
+                val pincode = call.parameters["pincode"]
+                val product = db.getBannerCategory(pincode.toString())
+                apiListResponse(
+                    HttpStatusCode.OK, statusCode = 200, ls = product, message = "fetched successfully", status = true
                 )
 
 
@@ -385,13 +465,55 @@ fun Route.adminRoute(
         }
         post("/AddItemCategory") {
             try {
-                var requestBody = call.receive<ProductCategory>()
-                print("request_body_of_Category ${requestBody}")
-                val response = db.addCategory(requestBody)
+                val requestBody = call.receive<ProductCategory>()
+                db.addCategory(requestBody)
                 call.respond(
-                    status = HttpStatusCode.OK,
-                    Message(statusCode = 200, message = "Added successfully", status = true)
+                    status = HttpStatusCode.OK, Message(statusCode = 200, message = "Added successfully", status = true)
                 )
+            } catch (e: Exception) {
+                apiResponse(
+                    statusCode = 400,
+                    message = "${e.message}",
+                    status = false,
+                    statusCodeApi = HttpStatusCode.BadRequest,
+                )
+
+            }
+
+        }
+        post("/AddBannerCategory") {
+            try {
+                val requestBody = call.receive<BannerCategory>()
+                db.addBannerCategory(requestBody)
+                call.respond(
+                    status = HttpStatusCode.OK, Message(statusCode = 200, message = "Added successfully", status = true)
+                )
+            } catch (e: Exception) {
+                apiResponse(
+                    statusCode = 400,
+                    message = "${e.message}",
+                    status = false,
+                    statusCodeApi = HttpStatusCode.BadRequest,
+                )
+
+            }
+
+        }
+        post("/UpdateBannerCategory") {
+            try {
+                val requestBody = call.receive<BannerCategory>()
+                requestBody.changetime = System.currentTimeMillis().toString()
+                val response = db.updateBannerCategory(requestBody)
+                if (response > 0) call.respond(
+                    status = HttpStatusCode.OK,
+                    Message(statusCode = 200, message = "UPDATE successfully", status = true)
+                )
+                else {
+                    call.respond(
+                        status = HttpStatusCode.OK,
+                        ApiResponse(status = false, statusCode = 400, message = "Not updated")
+                    )
+                }
             } catch (e: Exception) {
                 apiResponse(
                     statusCode = 400,
@@ -405,14 +527,15 @@ fun Route.adminRoute(
         }
         get("/RecentOrderCount") {
             try {
-                val orders = db.getAllOrder("Ordered")
+                val pincode = call.parameters["pincode"]
+                val orders = db.getAllOrder("Ordered", null, pincode = pincode)
                 val ordersFilter = orders.take(10)
-                val product = db.getHomeAllProducts()
+                val product = db.getHomeAllProducts1(pincode = pincode ?: "")
                 val users = db.getAlUsers()
+                val category = db.getProductCategory(pincode ?: "")
                 call.respond(
-                    status = HttpStatusCode.OK,
-                    CountResponse(
-                        image = "https://ik.imagekit.io/00itvcwwk/default-image.jpg?updatedAt=1687762479357",
+                    status = HttpStatusCode.OK, CountResponse(
+                        image = "https://ik.imagekit.io/00itvcwwk/Products/image_1694930617258_iwJuKEKtx.png?updatedAt=1694930621116",
                         name = "Akshay Garg",
                         ordersFilter,
                         listOf(
@@ -420,21 +543,18 @@ fun Route.adminRoute(
                                 "ProductItems",
                                 "https://ik.imagekit.io/00itvcwwk/Dashboard_Admin/MicrosoftTeams-image__20_.png?updatedAt=1689506162992",
                                 product.size
-                            ),
-                            ItemCount(
+                            ), ItemCount(
                                 "Users",
                                 "https://ik.imagekit.io/00itvcwwk/Dashboard_Admin/MicrosoftTeams-image__22_.png?updatedAt=1689506163196",
                                 users.size
-                            ),
-                            ItemCount(
+                            ), ItemCount(
                                 "Orders",
                                 "https://ik.imagekit.io/00itvcwwk/Dashboard_Admin/MicrosoftTeams-image__19_.png?updatedAt=1689506163736",
                                 orders.size
-                            ),
-                            ItemCount(
+                            ), ItemCount(
                                 "Category",
                                 "https://ik.imagekit.io/00itvcwwk/Dashboard_Admin/MicrosoftTeams-image__21_.png?updatedAt=1689506163236",
-                                orders.size
+                                category.size
                             )
                         ),
                         200,
@@ -452,43 +572,48 @@ fun Route.adminRoute(
 
             }
         }
-        post("/OrderStatus"){
+        post("/OrderStatus") {
 
-            var requestBody = call.receive<orderitem>()
-            requestBody.changeTime=System.currentTimeMillis().toDouble()
-            print("OrderStatus_is_${requestBody}")
-            if(requestBody.orderStatus.isNotEmpty()) {
+            val requestBody = call.receive<orderitem>()
+            requestBody.changeTime = System.currentTimeMillis().toDouble()
+            if (requestBody.orderStatus?.isNotEmpty() == true) {
 
                 if (db.setOrderStatus(requestBody) > 0) {
                     call.respond(
                         status = HttpStatusCode.OK,
                         ApiResponse(status = true, statusCode = 200, message = "Updated status Successfully")
                     )
-                }
-                else{
+                } else {
                     call.respond(
                         status = HttpStatusCode.BadRequest,
                         ApiResponse(status = false, statusCode = 400, message = "please check request body")
                     )
                 }
-            }else {
-                    call.respond(
-                        status = HttpStatusCode.OK,
-                        ApiResponse(status = false, statusCode = 200, message = "Incorrect status")
-                    )
-                }
+            } else {
+                call.respond(
+                    status = HttpStatusCode.OK,
+                    ApiResponse(status = false, statusCode = 200, message = "Incorrect status")
+                )
             }
         }
-
-
-
+        get("/deleteImageIoFile"){
+            val id = call.parameters["fileId"]
+            val client = OkHttpClient()
+            val mediaType = "text/plain".toMediaType()
+            val body = "".toRequestBody(mediaType)
+            val request = Request.Builder()
+                .url("https://api.imagekit.io/v1/files/$id")
+                .method("DELETE", body)
+                .addHeader("Authorization", "Basic cHJpdmF0ZV9tdHVMdjFGa0YrVE9YbFV5SC9ZbEIvQkpndVE9Og==")
+                .build()
+            val response = client.newCall(request).execute()
+            print("response_from_imagekit${response}")
+        }
         get("/AllUsers") {
             try {
                 val users = db.getAlUsers()
                 apiListResponse(
-                    HttpStatusCode.OK, statusCode = 200, ls = users,
-                    message = "fetched successfully",
-                    status = true
+                    HttpStatusCode.OK, statusCode = 200, ls = users, message = "fetched successfully", status = true
                 )
             } catch (e: Exception) {
                 apiResponse(
@@ -500,17 +625,10 @@ fun Route.adminRoute(
 
             }
         }
-        post("/getAddedPrd") { }
-
 
     }
-
-
-fun addAccessControlHeaders(call: ApplicationCall) {
-    call.response.headers.append(HttpHeaders.AccessControlAllowOrigin, "*")
-    call.response.headers.append(HttpHeaders.AccessControlAllowMethods, HttpMethod.Get.toString())
-    call.response.headers.append(HttpHeaders.AccessControlAllowMethods, HttpMethod.Head.toString())
 }
+
 
 
 

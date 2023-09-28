@@ -1,6 +1,7 @@
 package com.example.utils
 
 import com.example.src.modal.ApiResponse
+import com.example.src.modal.CommonClassResponse
 import com.example.src.modal.CommonListResponse
 import io.ktor.http.*
 import io.ktor.server.application.*
@@ -35,6 +36,21 @@ suspend fun <T>PipelineContext<Unit, ApplicationCall>.apiListResponse(
     call.respond(
         status = statusCodeApi,
         CommonListResponse(itemData = ls, statusCode = statusCode, message = message)
+    )
+
+}
+suspend fun <T>PipelineContext<Unit, ApplicationCall>.apiClassResponse(
+    statusCodeApi:HttpStatusCode,
+    statusCode: Int = 400,
+    message: String = "Something Went Wrong",
+    status:Boolean = false,
+    response:T
+) {
+
+
+    call.respond(
+        status = statusCodeApi,
+        CommonClassResponse(response = response, statusCode = statusCode, message = message)
     )
 
 }
