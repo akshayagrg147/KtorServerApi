@@ -339,6 +339,7 @@ fun Route.userRoute(
                 }
                 if (allitemcalled == true) {
                     val order = db.orderdetails(requestBodyItem)
+
                     call.respond(
                         HttpStatusCode.OK,
                         BookedOrders(ProductResponse = order, statusCode = 200, message = "Order Placed successfully")
@@ -359,6 +360,39 @@ fun Route.userRoute(
                 )
 
             }
+        }
+        get("/registerCustomertoken"){
+
+            try {
+                val token = call.parameters["token"]
+                val mobile = call.parameters["mobile"]
+                print("registerCustomertoken $token $mobile")
+                val status = db.registerCustomertoken(token.toString(),mobile.toString())
+
+                if (status > 0) {
+                    call.respond(
+                        status = HttpStatusCode.OK,
+                        ApiResponse(status = true, statusCode = 200, message = "Updated token Successfully")
+                    )
+                } else {
+                    call.respond(
+                        status = HttpStatusCode.BadRequest,
+                        ApiResponse(status = false, statusCode = 400, message = "please check request body")
+                    )
+                }
+
+
+            } catch (e: Exception) {
+                apiResponse(
+                    statusCode = 400,
+                    message = "${e.message}",
+                    status = false,
+                    statusCodeApi = HttpStatusCode.BadRequest,
+                )
+
+            }
+
+
         }
         post("/AvailibilityCheck") {
             try {

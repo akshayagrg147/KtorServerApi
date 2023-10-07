@@ -1,6 +1,8 @@
 package com.example.features.admin.domain.route
 
 
+import com.example.EmailData
+
 import com.example.src.modal.*
 import com.example.src.repository.DatabaseFactory
 import com.example.utils.apiClassResponse
@@ -15,6 +17,8 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import org.apache.commons.mail.DefaultAuthenticator
+import org.apache.commons.mail.SimpleEmail
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -22,6 +26,26 @@ fun Route.adminRoute(
     db: DatabaseFactory
 ) {
     route("/Admin") {
+
+        post("/send-email") {
+            val emailData = call.receive<EmailData>()
+            val result = sendEmail(
+                to = emailData.to,
+                subject = emailData.subject,
+                body = emailData.body,
+                smtpHost = "smtp.gmail.com",
+                smtpPort = 587, // or your SMTP port
+                smtpUsername = "akshaygarg147@gmail.com",
+                smtpPassword = "7973434833"
+            )
+
+            if (result) {
+                call.respond(HttpStatusCode.OK, "Email sent successfully.")
+            } else {
+                call.respond(HttpStatusCode.InternalServerError, "Failed to send email.")
+            }
+        }
+
         post("/Login") {
             try {
                 val value = call.receive<RequestLoginBody>()
@@ -72,7 +96,7 @@ fun Route.adminRoute(
         }
         post("/freeDelivery") {
             val requestBody = call.receive<adminAcess>()
-            if (db.freeDeliveryPriceUpdateUpdate(requestBody.email!!,requestBody.password!!,requestBody.name!!,requestBody.pincode!!,requestBody.price!!) > 0) {
+            if (db.freeDeliveryPriceUpdateUpdate(requestBody.email!!,requestBody.password!!,requestBody.name!!,requestBody.pincode!!,requestBody.price!!,requestBody.fcm_token!!,requestBody.deliveryContactNumber!!,requestBody.city!!) > 0) {
                 call.respond(
                     status = HttpStatusCode.OK,
                     ApiResponse(status = true, statusCode = 200, message = "Updated Delivery Amount Successfully")
@@ -85,6 +109,9 @@ fun Route.adminRoute(
             }
 
         }
+
+
+
         delete("deleteProduct/{productId}") {
             val id = call.parameters["productId"]
             try {
@@ -626,6 +653,38 @@ fun Route.adminRoute(
             }
         }
 
+    }
+
+
+
+}
+suspend fun sendEmail(
+    to: String,
+    subject: String,
+    body: String,
+    smtpHost: String,
+    smtpPort: Int,
+    smtpUsername: String,
+    smtpPassword: String
+): Boolean {
+    return try {
+        val email = SimpleEmail()
+        email.setHostName(smtpHost)
+        email.setSmtpPort(smtpPort)
+        email.setAuthenticator(DefaultAuthenticator(smtpUsername, smtpPassword))
+        email.isStartTLSEnabled = true
+
+        email.setFrom(smtpUsername)
+        email.addTo(to)
+        email.subject = subject
+        email.setMsg(body)
+
+        email.send()
+
+        true
+    } catch (e: Exception) {
+        e.printStackTrace()
+        false
     }
 }
 

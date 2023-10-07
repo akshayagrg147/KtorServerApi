@@ -71,6 +71,7 @@ class DatabaseFactory {
 
     suspend fun orderdetails(order: orderitem): orderitem {
         orderdetails.insertOne(order)
+        order.fcm_token=  adminAcessCollection.find(( adminAcess::pincode eq order.pincode)).first()?.fcm_token
         return order
     }
 
@@ -139,6 +140,9 @@ class DatabaseFactory {
         )
 
         val result = orderdetails.updateOne(Document("orderId", req.orderId), update)
+        val obj= userCollection.find(( Users::phone eq req.mobilenumber.replace("+",""))).first()
+      print("fcm_Token ${  obj?.fcmtoken}  ${req.mobilenumber}")
+
         return result.modifiedCount
     }
     suspend fun getProductSubItems(productId: String, pincode: String?): List<HomeProducts?> =
@@ -154,7 +158,16 @@ class DatabaseFactory {
     suspend fun userCheck(email:String,passord:String):adminAcess =
         adminAcessCollection.find(( adminAcess::password eq passord)).first()!!
 
-    suspend fun freeDeliveryPriceUpdateUpdate(email:String,passord: String,name:String,pincode:String,price:String):Long {
+    suspend fun freeDeliveryPriceUpdateUpdate(
+        email: String,
+        passord: String,
+        name: String,
+        pincode: String,
+        price: String,
+        fcm: String,
+        deliveryContactNumber: String,
+        city: String
+    ):Long {
         val update = Document(
             "\$set",
             Document("email", email)
@@ -162,6 +175,9 @@ class DatabaseFactory {
                 .append("pincode", pincode)
                 .append("name", name)
                 .append("price", price)
+                .append("fcm_token", fcm)
+                .append("deliveryContactNumber", deliveryContactNumber)
+                .append("city", city)
 
         )
 
@@ -246,6 +262,35 @@ class DatabaseFactory {
             return 0L
         }
     }
+
+
+    suspend fun registerCustomertoken(token: String, mobile: String): Long {
+        print("registerCustomertoken1 $token $mobile")
+
+        val obj= userCollection.find(( Users::phone eq mobile)).first()
+        val update = Document(
+            "\$set",
+            Document("email", obj?.email)
+
+                .append("name", obj?.name)
+
+                .append("phone", obj?.phone)
+                .append("profileImage", obj?.profileImage)
+                .append("fcmtoken", token)
+                .append("changetime",System.currentTimeMillis().toDouble())
+
+
+        )
+
+        val result = userCollection.updateOne(Document("phone", obj?.phone), update)
+        return result.modifiedCount
+    }
+
+
+
+
+
+
 
 
 

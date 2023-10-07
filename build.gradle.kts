@@ -61,6 +61,7 @@ dependencies {
     implementation("io.jsonwebtoken:jjwt-jackson:0.11.5")
     implementation("io.ktor:ktor-client-core:1.6.5")
     implementation("io.ktor:ktor-client-okhttp:1.6.5")
+    implementation("org.apache.commons:commons-email:1.5")
 
 
 }

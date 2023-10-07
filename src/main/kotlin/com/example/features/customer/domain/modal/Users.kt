@@ -16,5 +16,7 @@ data class Users(
     var order: String?=null,
     var cancel: String?=null,
     var deliver: String?=null,
+    val fcmtoken:String?=null,
+    val changetime:String?=null
 )
 
