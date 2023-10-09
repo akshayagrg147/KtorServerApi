@@ -62,6 +62,7 @@ dependencies {
     implementation("io.ktor:ktor-client-core:1.6.5")
     implementation("io.ktor:ktor-client-okhttp:1.6.5")
     implementation("org.apache.commons:commons-email:1.5")
+    implementation("com.google.firebase:firebase-admin:9.1.1")
 
 
 }

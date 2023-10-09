@@ -5,7 +5,9 @@ import com.auth0.jwt.algorithms.Algorithm
 import com.example.features.admin.domain.route.adminRoute
 import com.example.features.customer.domain.route.userRoute
 import com.example.src.repository.DatabaseFactory
-
+import com.google.auth.oauth2.GoogleCredentials
+import com.google.firebase.FirebaseApp
+import com.google.firebase.FirebaseOptions
 import com.typesafe.config.ConfigFactory
 import io.ktor.http.*
 import io.ktor.serialization.gson.*
@@ -16,12 +18,20 @@ import io.ktor.server.config.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import io.ktor.server.plugins.contentnegotiation.*
-import io.ktor.server.routing.*
-import io.ktor.http.HttpMethod
 import io.ktor.server.plugins.cors.routing.*
+import io.ktor.server.routing.*
+import java.io.FileInputStream
 
 
 fun main() {
+    val serviceAccount = object {}.javaClass.getResourceAsStream("/adminsdk.json")
+
+    val options = FirebaseOptions.Builder()
+        .setCredentials(GoogleCredentials.fromStream(serviceAccount))
+        .build()
+
+    FirebaseApp.initializeApp(options)
+
     embeddedServer(Netty, port = 8081, host = "0.0.0.0") {
         val databaseFactory = DatabaseFactory()
         val config = HoconApplicationConfig(ConfigFactory.load())

@@ -1,7 +1,15 @@
 package com.example.src.repository
 
+import com.example.EmailData
+import com.example.features.admin.domain.route.sendEmail
 import com.example.features.customer.domain.modal.Users
 import com.example.src.modal.*
+import com.google.firebase.messaging.FirebaseMessaging
+import com.google.firebase.messaging.Message
+import io.ktor.http.*
+import io.ktor.server.application.*
+import io.ktor.server.request.*
+import io.ktor.server.response.*
 import org.bson.Document
 import org.litote.kmongo.coroutine.CoroutineCollection
 import org.litote.kmongo.coroutine.coroutine
@@ -121,7 +129,7 @@ class DatabaseFactory {
 
     suspend fun getAllAdmins(): List<adminAcess> = adminAcessCollection.find().toList()
 
-    suspend fun setOrderStatus(req: orderitem): Long {
+    suspend fun setOrderStatus(req: orderitem,sendEmail:(String)->Unit): Long {
         val update = Document(
             "\$set",
             Document("orderId", req.orderId)
@@ -139,12 +147,20 @@ class DatabaseFactory {
 
         )
 
+
         val result = orderdetails.updateOne(Document("orderId", req.orderId), update)
-        val obj= userCollection.find(( Users::phone eq req.mobilenumber.replace("+",""))).first()
-      print("fcm_Token ${  obj?.fcmtoken}  ${req.mobilenumber}")
+        if(result.modifiedCount>0){
+            val obj= userCollection.find(( Users::phone eq req.mobilenumber.replace("+",""))).first()
+            sendNotification(obj?.fcmtoken?:"","order ${req.orderStatus} ","check your orders")
+            sendEmail(obj?.email?:"")
+        }
+
 
         return result.modifiedCount
     }
+
+
+
     suspend fun getProductSubItems(productId: String, pincode: String?): List<HomeProducts?> =
         home_collections.find(HomeProducts::item_subcategory_name eq productId,HomeProducts::pincode eq pincode).toList()
 
@@ -285,7 +301,18 @@ class DatabaseFactory {
         val result = userCollection.updateOne(Document("phone", obj?.phone), update)
         return result.modifiedCount
     }
+    fun sendNotification(token: String, title: String, body: String) {
+        val message = Message.builder()
+            .putData("title", title)
+            .putData("body", body)
+            .setToken(token)
+            .build()
 
+        val response = FirebaseMessaging.getInstance().send(message)
+
+        // Handle the response, check for errors, etc.
+        println("Successfully sent message: $response")
+    }
 
 
 

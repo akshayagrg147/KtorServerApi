@@ -36,7 +36,7 @@ fun Route.adminRoute(
                 smtpHost = "smtp.gmail.com",
                 smtpPort = 587, // or your SMTP port
                 smtpUsername = "akshaygarg147@gmail.com",
-                smtpPassword = "7973434833"
+                smtpPassword = "crrm ddex jwxo fmco"
             )
 
             if (result) {
@@ -605,11 +605,35 @@ fun Route.adminRoute(
             requestBody.changeTime = System.currentTimeMillis().toDouble()
             if (requestBody.orderStatus?.isNotEmpty() == true) {
 
-                if (db.setOrderStatus(requestBody) > 0) {
+                if (db.setOrderStatus(requestBody){
+                    if(it.isNotEmpty()){
+                        val result = sendEmail(
+                            to =it,
+                            subject = "Order Status: ${requestBody.orderStatus}",
+                            body = "Dear customer,\n\nYour order status is: ${requestBody.orderStatus}.",
+
+                            smtpHost = "smtp.gmail.com",
+                            smtpPort = 587, // or your SMTP port
+                            smtpUsername = "akshaygarg147@gmail.com",
+                            smtpPassword = "crrm ddex jwxo fmco"
+                        )
+
+                        if (result) {
+                            print("Email sent successfully.")
+                        } else {
+                            print("Failed to send email.")
+                        }
+
+                    }
+                    } > 0) {
                     call.respond(
                         status = HttpStatusCode.OK,
                         ApiResponse(status = true, statusCode = 200, message = "Updated status Successfully")
                     )
+
+
+
+
                 } else {
                     call.respond(
                         status = HttpStatusCode.BadRequest,
@@ -658,7 +682,7 @@ fun Route.adminRoute(
 
 
 }
-suspend fun sendEmail(
+ fun sendEmail(
     to: String,
     subject: String,
     body: String,
