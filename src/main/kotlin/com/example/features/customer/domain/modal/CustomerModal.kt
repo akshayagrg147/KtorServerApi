@@ -21,7 +21,8 @@ data class HomeProducts(
     var changeTime: Double? = null,
     var pincode: String?=null
 )
-data class adminAcess(var email:String?=null,var password:String?=null,var pincode:String?=null,var name:String?=null,var price:String?=null,val city: String?=null ,val deliveryContactNumber:String?=null,val fcm_token:String?=null)
+data class adminAcess(var email:String?=null, var password:String?=null, var pincode:String?=null, var name:String?=null, var price:String?=null, val city: String?=null, val deliveryContactNumber:String?=null, val fcm_token:String?=null,
+                      var generateToken:String?=null)
 data class adminAvailable(var pincode:String?=null,var price:String?=null,val city: String? ,val deliveryContactNumber:String)
 data class exclusiveOffers(
     var productName: String = "",

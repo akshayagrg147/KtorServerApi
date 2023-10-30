@@ -42,7 +42,7 @@ dependencies {
     // Koin for Ktor
     implementation("io.insert-koin:koin-ktor:$koin_ktor")
     // SLF4J Logger
-    implementation("io.insert-koin:koin-logger-slf4j:$koin_ktor")
+   implementation("io.insert-koin:koin-logger-slf4j:$koin_ktor")
 
     // ktor authentication
     implementation("io.ktor:ktor-server-auth:$ktor_version")
@@ -59,8 +59,8 @@ dependencies {
     implementation("io.jsonwebtoken:jjwt-api:0.11.5")
     implementation("io.jsonwebtoken:jjwt-impl:0.11.5")
     implementation("io.jsonwebtoken:jjwt-jackson:0.11.5")
-    implementation("io.ktor:ktor-client-core:1.6.5")
-    implementation("io.ktor:ktor-client-okhttp:1.6.5")
+    implementation("io.ktor:ktor-client-core:2.2.4")
+    implementation("io.ktor:ktor-client-okhttp:2.2.4")
     implementation("org.apache.commons:commons-email:1.5")
     implementation("com.google.firebase:firebase-admin:9.1.1")
 

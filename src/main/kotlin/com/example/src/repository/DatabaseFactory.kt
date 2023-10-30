@@ -84,7 +84,7 @@ class DatabaseFactory {
     }
 
 
-    suspend fun getAllOrder(status:String,mobileNumber:String?=null,pincode:String?=null): List<orderitem> = orderdetails.find(orderitem::pincode eq pincode?.replace("\"", ""),orderitem::orderStatus eq status.replace("\"", ""),if(mobileNumber?.isNotEmpty()==true)orderitem::mobilenumber eq mobileNumber.replace("\"", "") else null).toList()
+    suspend fun getAllOrder(status:String,mobileNumber:String?=null,pincode:String?=null): List<orderitem> = orderdetails.find(orderitem::orderStatus eq status.replace("\"", ""),if(mobileNumber?.isNotEmpty()==true)orderitem::mobilenumber eq mobileNumber.replace("\"", "") else null).toList()
 
     suspend fun getAllOrderPagination(skip: Int?, limit: Int?,pincode: String): List<orderitem> =
         orderdetails.find(orderitem::pincode eq pincode.replace("\"", "")).skip(skip ?: 0).limit(limit ?: 0).toList()
@@ -151,8 +151,8 @@ class DatabaseFactory {
         val result = orderdetails.updateOne(Document("orderId", req.orderId), update)
         if(result.modifiedCount>0){
             val obj= userCollection.find(( Users::phone eq req.mobilenumber.replace("+",""))).first()
-            sendNotification(obj?.fcmtoken?:"","order ${req.orderStatus} ","check your orders")
-            sendEmail(obj?.email?:"")
+          //  sendNotification(obj?.fcmtoken?:"","order ${req.orderStatus} ","check your orders")
+            //sendEmail(obj?.email?:"")
         }
 
 
