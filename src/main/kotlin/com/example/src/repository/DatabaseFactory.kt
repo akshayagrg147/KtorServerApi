@@ -22,7 +22,7 @@ class DatabaseFactory {
     private val username = URLEncoder.encode("akshaygarg147", "UTF-8")
     private val password = URLEncoder.encode("Akshaygarg147@", "UTF-8")
     private val url = "mongodb+srv://$username:$password@cluster0.qkvbexc.mongodb.net/"
-    private val client = KMongo.createClient().coroutine
+    private val client = KMongo.createClient(url).coroutine
     private val database = client.getDatabase("groceryMain")
     val userCollection: CoroutineCollection<Users> = database.getCollection()
     val orderdetails: CoroutineCollection<orderitem> = database.getCollection()
