@@ -50,11 +50,11 @@ class DatabaseFactory {
 
 
 
-    suspend fun getProductCategory(pincode:String): List<ProductCategory> {
-        return adminItemCategory.find(ProductCategory::pincode eq pincode.replace("\"", "")).toList()
+    suspend fun getProductCategory(pincode:String,sellerId:String?=null): List<ProductCategory> {
+        return adminItemCategory.find(ProductCategory::pincode eq pincode.replace("\"", ""),ProductCategory::sellerId eq sellerId?.replace("\"", "")).toList()
     }
     suspend fun getBannerCategory(pincode:String): List<BannerCategory> {
-        return adminBannerCategory.find(BannerCategory::pincode eq pincode.replace("\"", "")).toList()
+        return adminBannerCategory.find().toList()
     }
 
     suspend fun addProductAdminDashboard(request: HomeProducts): HomeProducts {
@@ -84,20 +84,20 @@ class DatabaseFactory {
     }
 
 
-    suspend fun getAllOrder(status:String,mobileNumber:String?=null,pincode:String?=null): List<orderitem> = orderdetails.find(orderitem::orderStatus eq status.replace("\"", ""),if(mobileNumber?.isNotEmpty()==true)orderitem::mobilenumber eq mobileNumber.replace("\"", "") else null).toList()
+    suspend fun getAllOrder(status:String,mobileNumber:String?=null,pincode:String?=null,sellerId:String?=null): List<orderitem> = orderdetails.find(orderitem::orderStatus eq status.replace("\"", ""),if(sellerId?.isNotEmpty()==true)orderitem::sellerId eq sellerId.replace("\"", "") else null,if(pincode?.isNotEmpty()==true)orderitem::pincode eq pincode.replace("\"", "") else null).toList()
 
-    suspend fun getAllOrderPagination(skip: Int?, limit: Int?,pincode: String): List<orderitem> =
-        orderdetails.find(orderitem::pincode eq pincode.replace("\"", "")).skip(skip ?: 0).limit(limit ?: 0).toList()
+    suspend fun getAllOrderPagination(skip: Int?, limit: Int?,pincode: String,sellerId:String): List<orderitem> =
+        orderdetails.find(orderitem::pincode eq pincode.replace("\"", ""),orderitem::sellerId eq sellerId.replace("\"", "")).skip(skip ?: 0).limit(limit ?: 0).toList()
 
     suspend fun getAllUsers(): List<Users> = userCollection.find().toList()
 
 
     //get home products
-    suspend fun getSearchAllProducts(string: Regex, pincode: String?): List<HomeProducts> =
-        home_collections.find(HomeProducts::productName regex string,HomeProducts::pincode eq pincode).toList()
+    suspend fun getSearchAllProducts(string: Regex, pincode: String?,sellerId:String?=null): List<HomeProducts> =
+        home_collections.find(HomeProducts::productName regex string,HomeProducts::pincode eq pincode,HomeProducts::sellerId eq sellerId).toList()
 
-    suspend fun getHomeAllProducts(offset: Int? = 0, limit: Int? = 0, category: String? = "",pincode: String?): List<HomeProducts> =
-        home_collections.find(if(category!=null)HomeProducts::item_subcategory_name eq category.replace("\"", "") else null,HomeProducts::pincode eq pincode?.replace("\"", "")).skip(offset ?: 0).limit(limit ?: 0).toList()
+    suspend fun getHomeAllProducts(offset: Int? = 0, limit: Int? = 0, category: String? = "",pincode: String?,sellerId:String?=null): List<HomeProducts> =
+        home_collections.find(if(category!=null)HomeProducts::item_subcategory_name eq category.replace("\"", "") else null,HomeProducts::pincode eq pincode?.replace("\"", ""),HomeProducts::sellerId eq sellerId?.replace("\"", "")).skip(offset ?: 0).limit(limit ?: 0).toList()
 
     suspend fun GetPendingProductById(productId: String): HomeProducts? =
         home_collections.find(HomeProducts::productId eq productId).first()
@@ -122,8 +122,8 @@ class DatabaseFactory {
     suspend fun getAllExclusiveCollection(): List<exclusiveOffers> =
         exclusiveCollection.find().toList()
 
-    suspend fun getHomeAllProducts1(pincode:String): List<HomeProducts> =
-        home_collections.find(HomeProducts::pincode eq pincode).toList()
+    suspend fun getHomeAllProducts1(pincode:String,sellerId:String?=null): List<HomeProducts> =
+        home_collections.find(HomeProducts::pincode eq pincode,HomeProducts::sellerId eq sellerId?.replace("\"", "")).toList()
 
     suspend fun getAlUsers(): List<Users> = userCollection.find().toList()
 
@@ -182,7 +182,9 @@ class DatabaseFactory {
         price: String,
         fcm: String,
         deliveryContactNumber: String,
-        city: String
+        city: String,
+        sellerId: String?
+
     ):Long {
         val update = Document(
             "\$set",
@@ -194,6 +196,8 @@ class DatabaseFactory {
                 .append("fcm_token", fcm)
                 .append("deliveryContactNumber", deliveryContactNumber)
                 .append("city", city)
+                .append("sellerId", sellerId)
+
 
         )
 

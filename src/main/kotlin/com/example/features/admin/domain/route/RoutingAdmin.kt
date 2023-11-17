@@ -162,7 +162,8 @@ fun Route.adminRoute(
                         requestBody.price!!,
                         requestBody.fcm_token!!,
                         requestBody.deliveryContactNumber!!,
-                        requestBody.city!!
+                        requestBody.city!!,
+                    requestBody.sellerId
                     ) > 0
                 ) {
                     call.respond(
@@ -259,10 +260,11 @@ fun Route.adminRoute(
             get("/AllOrdersByPages") {
                 try {
                     val pinCode = call.parameters["pincode"]
+                    val sellerId = call.parameters["sellerId"]
                     val skip = call.parameters["skip"]
                     val limit = call.parameters["limit"]
                     val orders =
-                        db.getAllOrderPagination(Integer.parseInt(skip), Integer.parseInt(limit), pinCode.toString())
+                        db.getAllOrderPagination(Integer.parseInt(skip), Integer.parseInt(limit), pinCode.toString(),sellerId.toString())
                     apiListResponse(
                         HttpStatusCode.OK,
                         statusCode = 200,
@@ -286,9 +288,10 @@ fun Route.adminRoute(
                 try {
                     val value = call.parameters["query"]
                     val pincode = call.parameters["pincode"]
+                    val sellerId = call.parameters["sellerId"]
                     if (value?.isNotEmpty() == true) {
                         val regex = Regex("${value}.*", RegexOption.IGNORE_CASE)
-                        val product = db.getSearchAllProducts(regex, pincode)
+                        val product = db.getSearchAllProducts(regex, pincode,sellerId)
                         apiListResponse(
                             HttpStatusCode.OK,
                             statusCode = 200,
@@ -314,8 +317,9 @@ fun Route.adminRoute(
                     val skip = call.parameters["skip"]
                     val limit = call.parameters["limit"]
                     val pincode = call.parameters["pincode"]
+                    val sellerId = call.parameters["sellerId"]
                     val product = db.getHomeAllProducts(
-                        Integer.parseInt(skip), Integer.parseInt(limit), null, pincode = pincode
+                        Integer.parseInt(skip), Integer.parseInt(limit), null, pincode = pincode,sellerId
                     )
                     apiListResponse(
                         HttpStatusCode.OK,
@@ -535,7 +539,8 @@ fun Route.adminRoute(
             get("/getProductCategory") {
                 try {
                     val pincode = call.parameters["pincode"]
-                    val product = db.getProductCategory(pincode.toString())
+                    val sellerId = call.parameters["sellerId"]
+                    val product = db.getProductCategory(pincode.toString(),sellerId.toString())
                     apiListResponse(
                         HttpStatusCode.OK,
                         statusCode = 200,
@@ -557,7 +562,9 @@ fun Route.adminRoute(
             get("/getBannerCategory") {
                 try {
                     val pincode = call.parameters["pincode"]
+                    val sellerId = call.parameters["sellerId"]
                     val product = db.getBannerCategory(pincode.toString())
+                    print("getbnnercategoryis ${product.size}  ${product}  ")
                     apiListResponse(
                         HttpStatusCode.OK,
                         statusCode = 200,
@@ -645,11 +652,12 @@ fun Route.adminRoute(
             get("/RecentOrderCount") {
                 try {
                     val pincode = call.parameters["pincode"]
-                    val orders = db.getAllOrder("Ordered", null, pincode = pincode)
+                    val sellerId = call.parameters["sellerId"]
+                    val orders = db.getAllOrder(status="Ordered",mobileNumber= null, pincode = pincode,sellerId=sellerId.toString())
                     val ordersFilter = orders.take(10)
-                    val product = db.getHomeAllProducts1(pincode = pincode ?: "")
+                    val product = db.getHomeAllProducts1(pincode = pincode ?: "",sellerId=sellerId.toString())
                     val users = db.getAlUsers()
-                    val category = db.getProductCategory(pincode ?: "")
+                    val category = db.getProductCategory(pincode ?: "",sellerId=sellerId.toString())
                     call.respond(
                         status = HttpStatusCode.OK, CountResponse(
                             image = "https://ik.imagekit.io/00itvcwwk/Products/image_1694930617258_iwJuKEKtx.png?updatedAt=1694930621116",
