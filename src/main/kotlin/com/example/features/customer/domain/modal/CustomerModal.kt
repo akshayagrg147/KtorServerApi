@@ -114,7 +114,7 @@ data class Orders(
     val productName: String? = null,
     val quantity: String? = null,
     val productprice: String? = null,
-    var sellerIdList:ArrayList<String>?=null,
+    var sellerIdList:String?=null,
 )
 
 data class Message(
