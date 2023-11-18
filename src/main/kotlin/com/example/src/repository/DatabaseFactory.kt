@@ -54,7 +54,7 @@ class DatabaseFactory {
         return adminItemCategory.find(ProductCategory::pincode eq pincode.replace("\"", ""),ProductCategory::sellerId eq sellerId?.replace("\"", "")).toList()
     }
     suspend fun getBannerCategory(pincode:String): List<BannerCategory> {
-        return adminBannerCategory.find().toList()
+        return adminBannerCategory.find(ProductCategory::pincode eq pincode.replace("\"", "")).toList()
     }
 
     suspend fun addProductAdminDashboard(request: HomeProducts): HomeProducts {
@@ -79,7 +79,12 @@ class DatabaseFactory {
 
     suspend fun orderdetails(order: orderitem): orderitem {
         orderdetails.insertOne(order)
-        order.fcm_token=  adminAcessCollection.find(( adminAcess::pincode eq order.pincode)).first()?.fcm_token
+        val fcmTokens:List<adminAcess> =adminAcessCollection.find(adminAcess::pincode eq order.pincode,adminAcess::sellerId eq order.sellerId).toList()
+        for(fcmToken in  fcmTokens){
+
+            order.fcm_token?.add(fcmToken.fcm_token.toString())
+        }
+
         return order
     }
 
