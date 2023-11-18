@@ -103,8 +103,10 @@ data class orderitem(
     var orderId: String,
     var orderStatus:String?=null,
     var pincode:String?=null,
-    var fcm_token:ArrayList<String>?=null,
-    var sellerId:String?=null
+
+    var fcm_tokenSeller:ArrayList<String>?=null,
+    var sellerId:String?=null,
+    var listOfSellerId:ArrayList<String>?=null
 )
 
 data class Orders(

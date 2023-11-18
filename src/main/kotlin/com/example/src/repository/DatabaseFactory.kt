@@ -79,10 +79,12 @@ class DatabaseFactory {
 
     suspend fun orderdetails(order: orderitem): orderitem {
         orderdetails.insertOne(order)
-        val fcmTokens:List<adminAcess> =adminAcessCollection.find(adminAcess::pincode eq order.pincode,adminAcess::sellerId eq order.sellerId).toList()
+        var fcmTokens:List<adminAcess> = emptyList()
+        for(sellerId in order.listOfSellerId?: emptyList())
+         fcmTokens=adminAcessCollection.find(adminAcess::pincode eq order.pincode,adminAcess::sellerId eq sellerId).toList()
         for(fcmToken in  fcmTokens){
 
-            order.fcm_token?.add(fcmToken.fcm_token.toString())
+            order.fcm_tokenSeller?.add(fcmToken.fcm_token.toString())
         }
 
         return order
