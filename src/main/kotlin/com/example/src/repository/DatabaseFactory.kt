@@ -51,7 +51,7 @@ class DatabaseFactory {
 
 
     suspend fun getProductCategory(pincode:String,sellerId:String?=null): List<ProductCategory> {
-        return adminItemCategory.find(ProductCategory::pincode eq pincode.replace("\"", ""),ProductCategory::sellerId eq sellerId?.replace("\"", "")).toList()
+        return adminItemCategory.find(ProductCategory::pincode eq pincode.replace("\"", ""),if(sellerId?.isNotEmpty()==true)ProductCategory::sellerId eq sellerId.replace("\"", "") else null).toList()
     }
     suspend fun getBannerCategory(pincode:String): List<BannerCategory> {
         return adminBannerCategory.find(ProductCategory::pincode eq pincode.replace("\"", "")).toList()
@@ -99,10 +99,10 @@ class DatabaseFactory {
 
     //get home products
     suspend fun getSearchAllProducts(string: Regex, pincode: String?,sellerId:String?=null): List<HomeProducts> =
-        home_collections.find(HomeProducts::productName regex string,HomeProducts::pincode eq pincode,HomeProducts::sellerId eq sellerId).toList()
+        home_collections.find(HomeProducts::productName regex string,HomeProducts::pincode eq pincode,if(sellerId?.isNotEmpty()==true)HomeProducts::sellerId eq sellerId.replace("\"", "") else null).toList()
 
     suspend fun getHomeAllProducts(offset: Int? = 0, limit: Int? = 0, category: String? = "",pincode: String?,sellerId:String?=null): List<HomeProducts> =
-        home_collections.find(if(category!=null)HomeProducts::item_subcategory_name eq category.replace("\"", "") else null,HomeProducts::pincode eq pincode?.replace("\"", ""),HomeProducts::sellerId eq sellerId?.replace("\"", "")).skip(offset ?: 0).limit(limit ?: 0).toList()
+        home_collections.find(if(category!=null)HomeProducts::item_subcategory_name eq category.replace("\"", "") else null,HomeProducts::pincode eq pincode?.replace("\"", ""),if(sellerId?.isNotEmpty()==true)HomeProducts::sellerId eq sellerId.replace("\"", "") else null).skip(offset ?: 0).limit(limit ?: 0).toList()
 
     suspend fun GetPendingProductById(productId: String): HomeProducts? =
         home_collections.find(HomeProducts::productId eq productId).first()
@@ -128,7 +128,7 @@ class DatabaseFactory {
         exclusiveCollection.find().toList()
 
     suspend fun getHomeAllProducts1(pincode:String,sellerId:String?=null): List<HomeProducts> =
-        home_collections.find(HomeProducts::pincode eq pincode,HomeProducts::sellerId eq sellerId?.replace("\"", "")).toList()
+        home_collections.find(HomeProducts::pincode eq pincode,if(sellerId?.isNotEmpty()==true)HomeProducts::sellerId eq sellerId.replace("\"", "") else null).toList()
 
     suspend fun getAlUsers(): List<Users> = userCollection.find().toList()
 
