@@ -105,6 +105,7 @@ data class orderitem(
     var pincode:String?=null,
 
     var fcm_tokenSeller:ArrayList<String>?=null,
+    var sellerId:String?=null,
     var listOfSellerId:ArrayList<String>?=null
 )
 
@@ -113,7 +114,7 @@ data class Orders(
     val productName: String? = null,
     val quantity: String? = null,
     val productprice: String? = null,
-    var sellerId:ArrayList<String>?=null,
+    var sellerIdList:ArrayList<String>?=null,
 )
 
 data class Message(
