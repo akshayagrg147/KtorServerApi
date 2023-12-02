@@ -104,7 +104,7 @@ data class orderitem(
     var orderStatus:String?=null,
     var pincode:String?=null,
 
-    var fcm_tokenSeller:ArrayList<String>?=null,
+    var fcm_tokenSeller: ArrayList<String> = ArrayList(),
     var sellerId:String?=null,
     var listOfSellerId:ArrayList<String>?=null
 )

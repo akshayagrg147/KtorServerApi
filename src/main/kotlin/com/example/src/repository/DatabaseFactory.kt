@@ -11,6 +11,7 @@ import io.ktor.server.application.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import org.bson.Document
+import org.litote.kmongo.and
 import org.litote.kmongo.coroutine.CoroutineCollection
 import org.litote.kmongo.coroutine.coroutine
 import org.litote.kmongo.eq
@@ -78,16 +79,23 @@ class DatabaseFactory {
     }
 
     suspend fun orderdetails(order: orderitem): orderitem {
+        // Assuming `orderdetails` is a MongoDB collection
         orderdetails.insertOne(order)
-        var fcmTokens:List<adminAcess> = emptyList()
-        for(sellerId in order.listOfSellerId?: emptyList())
-         fcmTokens=adminAcessCollection.find(adminAcess::pincode eq order.pincode,adminAcess::sellerId eq sellerId).toList()
-        for(fcmToken in  fcmTokens){
 
-            order.fcm_tokenSeller?.add(fcmToken.fcm_token.toString())
-        }
+        val fcmTokens: List<adminAcess> = order.listOfSellerId?.flatMap { sellerId ->
+            adminAcessCollection.find(
+                and(
+                    adminAcess::pincode eq order.pincode,
+                    adminAcess::sellerId eq sellerId
+                )
+            ).toList()
+        } ?: emptyList()
 
+        order.sellerId = "1Abb1"
+        order.fcm_tokenSeller = ArrayList()
+        order.fcm_tokenSeller.addAll(fcmTokens.map { it.fcm_token.toString() })
         return order
+
     }
 
 

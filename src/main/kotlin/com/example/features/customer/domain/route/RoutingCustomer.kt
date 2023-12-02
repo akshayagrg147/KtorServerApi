@@ -89,7 +89,7 @@ fun Route.userRoute(
 
             }
         }
-        authenticate("jwt") {
+
             get("/ExclusiveOffers") {
                 try {
                     val pincode = call.parameters["pincode"]
@@ -766,7 +766,7 @@ fun Route.userRoute(
         }
 
     }
-}
+
 
 //}
 
