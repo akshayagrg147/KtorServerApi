@@ -23,8 +23,8 @@ data class HomeProducts(
     var sellerId:String?=null
 )
 data class adminAcess(var email:String?=null, var password:String?=null, var pincode:String?=null, var name:String?=null, var price:String?=null, val city: String?=null, val deliveryContactNumber:String?=null, val fcm_token:String?=null,
-                      var generateToken:String?=null,var sellerId:String?=null)
-data class adminAvailable(var pincode:String?=null,var price:String?=null,val city: String? ,val deliveryContactNumber:String)
+                      var generateToken:String?=null,var sellerId:String?=null,var isSuperAdmin:String?=null)
+data class adminAvailable(var pincode:String?=null,var price:String?=null,val city: String? ,val deliveryContactNumber:String,val sellerId: String )
 data class exclusiveOffers(
     var productName: String = "",
     var orignal_price: String = "",

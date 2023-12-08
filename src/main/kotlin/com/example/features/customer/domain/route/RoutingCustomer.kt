@@ -307,10 +307,12 @@ fun Route.userRoute(
                 val admins: List<adminAcess> = db.getAllAdmins()
                 val filterList: List<adminAvailable> = admins.map { adminAcess ->
                     adminAvailable(
-                        adminAcess.pincode,
-                        adminAcess.price,
-                        adminAcess.city,
-                        adminAcess.deliveryContactNumber ?: ""
+                        pincode = adminAcess.pincode,
+                       price =  adminAcess.price,
+                       city =  adminAcess.city,
+                        sellerId = adminAcess.sellerId?:"",
+                        deliveryContactNumber = adminAcess.deliveryContactNumber ?: "",
+
                     )
                 }
 

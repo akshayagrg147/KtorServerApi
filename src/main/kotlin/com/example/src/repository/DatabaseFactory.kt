@@ -11,12 +11,11 @@ import io.ktor.server.application.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import org.bson.Document
-import org.litote.kmongo.and
+
+import org.litote.kmongo.*
 import org.litote.kmongo.coroutine.CoroutineCollection
 import org.litote.kmongo.coroutine.coroutine
-import org.litote.kmongo.eq
 import org.litote.kmongo.reactivestreams.KMongo
-import org.litote.kmongo.regex
 import java.net.URLEncoder
 
 class DatabaseFactory {
@@ -91,7 +90,7 @@ class DatabaseFactory {
             ).toList()
         } ?: emptyList()
 
-        order.sellerId = "1Abb1"
+        order.sellerId = ""
         order.fcm_tokenSeller = ArrayList()
         order.fcm_tokenSeller.addAll(fcmTokens.map { it.fcm_token.toString() })
         return order
@@ -99,8 +98,11 @@ class DatabaseFactory {
     }
 
 
-    suspend fun getAllOrder(status:String,mobileNumber:String?=null,pincode:String?=null,sellerId:String?=null): List<orderitem> = orderdetails.find(orderitem::orderStatus eq status.replace("\"", ""),if(sellerId?.isNotEmpty()==true)orderitem::sellerId eq sellerId.replace("\"", "") else null,if(pincode?.isNotEmpty()==true)orderitem::pincode eq pincode.replace("\"", "") else null).toList()
+    suspend fun getAllOrder(status:String,mobileNumber:String?=null,pincode:String?=null,sellerId:String?=null): List<orderitem> {
 
+       return orderdetails.find(orderitem::orderStatus eq status.replace("\"", ""),if(sellerId?.isNotEmpty()==true)orderitem::fcm_tokenSeller contains sellerId.replace("\"", "") else null,if(pincode?.isNotEmpty()==true)orderitem::pincode eq pincode.replace("\"", "") else null).toList()
+
+    }
     suspend fun getAllOrderPagination(skip: Int?, limit: Int?,pincode: String,sellerId:String): List<orderitem> =
         orderdetails.find(orderitem::pincode eq pincode.replace("\"", ""),orderitem::sellerId eq sellerId.replace("\"", "")).skip(skip ?: 0).limit(limit ?: 0).toList()
 
