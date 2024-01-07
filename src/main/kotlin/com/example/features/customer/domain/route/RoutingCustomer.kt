@@ -312,6 +312,8 @@ fun Route.userRoute(
                        city =  adminAcess.city,
                         sellerId = adminAcess.sellerId?:"",
                         deliveryContactNumber = adminAcess.deliveryContactNumber ?: "",
+                        lat = adminAcess.lat,
+                        lng=adminAcess.lng
 
                     )
                 }
