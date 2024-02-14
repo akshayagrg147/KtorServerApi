@@ -271,6 +271,32 @@ fun Route.userRoute(
 
                 }
             }
+
+
+            post("/ItemsCollections") {
+                try {
+                    val requestBody = call.receive<SearchByProductId>()
+                    if (requestBody.ProductId != null) {
+                        val listItems = db.getProductSubItems(requestBody.ProductId, requestBody.pincode)
+                        apiListResponse(
+                            HttpStatusCode.OK,
+                            statusCode = 200,
+                            ls = listItems,
+                            message = "fetched successfully",
+                            status = true
+                        )
+                    }
+                } catch (e: Exception) {
+                    apiResponse(
+                        statusCode = 400,
+                        message = "${e.message}",
+                        status = false,
+                        statusCodeApi = HttpStatusCode.BadRequest,
+                    )
+
+                }
+            }
+
             get("/getProductCategory") {
                 try {
                     val pincode = call.parameters["pincode"]
@@ -305,6 +331,7 @@ fun Route.userRoute(
             }
             post("/getAdminDetails") {
                 val admins: List<adminAcess> = db.getAllAdmins()
+
                 val filterList: List<adminAvailable> = admins.map { adminAcess ->
                     adminAvailable(
                         pincode = adminAcess.pincode,
@@ -313,7 +340,12 @@ fun Route.userRoute(
                         sellerId = adminAcess.sellerId?:"",
                         deliveryContactNumber = adminAcess.deliveryContactNumber ?: "",
                         lat = adminAcess.lat,
-                        lng=adminAcess.lng
+                        lng=adminAcess.lng,
+                        categorySellerData =SellerCategoryData(
+
+                            sellerCatergoryList =     db.getAllProductCategory(adminAcess.sellerId?:"").map { CategoryImage(it.category,it .imageUrl.toString(),it.subCategoryList.map { it.name })},
+
+                        )
 
                     )
                 }
@@ -323,6 +355,7 @@ fun Route.userRoute(
                     CommonListResponse(filterList.toList(), 200, "fetched successfully")
                 )
             }
+
             post("/getUserDetails") {
                 try {
                     val requestBody = call.receive<UserRequest>()

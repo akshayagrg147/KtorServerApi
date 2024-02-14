@@ -53,6 +53,9 @@ class DatabaseFactory {
     suspend fun getProductCategory(pincode:String,sellerId:String?=null): List<ProductCategory> {
         return adminItemCategory.find(ProductCategory::pincode eq pincode.replace("\"", ""),if(sellerId?.isNotEmpty()==true)ProductCategory::sellerId eq sellerId.replace("\"", "") else null).toList()
     }
+    suspend fun getAllProductCategory(sellerId:String?=null): List<ProductCategory> {
+        return adminItemCategory.find(if(sellerId?.isNotEmpty()==true)ProductCategory::sellerId eq sellerId.replace("\"", "") else null).toList()
+    }
     suspend fun getBannerCategory(pincode:String): List<BannerCategory> {
         return adminBannerCategory.find(ProductCategory::pincode eq pincode.replace("\"", "")).toList()
     }
@@ -180,6 +183,10 @@ class DatabaseFactory {
 
     suspend fun getProductSubItems(productId: String, pincode: String?): List<HomeProducts?> =
         home_collections.find(HomeProducts::item_subcategory_name eq productId,HomeProducts::pincode eq pincode).toList()
+
+    suspend fun getProductAllSubItems(productId: String, sellerId: String?): List<HomeProducts?> =
+        home_collections.find(HomeProducts::item_subcategory_name eq productId,HomeProducts::sellerId eq sellerId).toList()
+
 
     suspend fun getUserByPhone(phone: String): Users? = userCollection.find(Users::phone eq phone.replace("\"", "")).first()
     suspend fun checkNumberExist(phone: String): Boolean =
@@ -335,9 +342,8 @@ class DatabaseFactory {
         println("Successfully sent message: $response")
     }
 
-
-
-
+    suspend fun getAllProductSubItems(productId: String, pincode: String?): List<HomeProducts?> =
+        home_collections.find(HomeProducts::item_subcategory_name eq productId,HomeProducts::pincode eq pincode).toList()
 
 
 

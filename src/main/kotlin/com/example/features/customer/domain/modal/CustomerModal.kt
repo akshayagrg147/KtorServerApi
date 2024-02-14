@@ -24,7 +24,9 @@ data class HomeProducts(
 )
 data class adminAcess(var email:String?=null, var password:String?=null, var pincode:String?=null, var name:String?=null, var price:String?=null, val city: String?=null, val deliveryContactNumber:String?=null, val fcm_token:String?=null,
                       var generateToken:String?=null,var sellerId:String?=null,var isSuperAdmin:String?=null,var lat:String?=null,var lng:String?=null,)
-data class adminAvailable(var pincode:String?=null,var price:String?=null,val city: String? ,val deliveryContactNumber:String,val sellerId: String,var lat:String?=null,var lng:String?=null, )
+data class adminAvailable(var pincode:String?=null,var price:String?=null,val city: String? ,val deliveryContactNumber:String,val sellerId: String,var lat:String?=null,var lng:String?=null, var categorySellerData:SellerCategoryData)
+data class SellerCategoryData(var sellerCatergoryList:List<CategoryImage?>)
+data class CategoryImage(var name: String?,var image: String,var sellerSubCatergoryList:List<String?>)
 data class exclusiveOffers(
     var productName: String = "",
     var orignal_price: String = "",
@@ -57,7 +59,7 @@ data class bestSelling(
     var categoryType: Int = 0
 )
 
-data class SearchByProductId(val ProductId: String? = null,val pincode: String?)
+data class SearchByProductId(val ProductId: String? = null,val pincode: String?=null, val sellerId: String? = null, val combineCategory: String? = null,)
 data class CityAailibilty(val city: String? = null)
 data class ProductCategory(
     val category: String? = null,

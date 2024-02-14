@@ -76,6 +76,37 @@ fun Route.adminRoute(
                 )
             }
         }
+        post("/allCategoryItemsCollections") {
+            try {
+                val requestBody = call.receive<SearchByProductId>()
+                var listItems= mutableListOf<HomeProducts?>()
+                if (requestBody.combineCategory != null) {
+                    val resultList = requestBody.combineCategory?.split("_")
+
+                    if (resultList != null) {
+                        for(category in resultList){
+                            listItems.addAll( db.getProductAllSubItems(category, requestBody.sellerId))
+                        }
+                    }
+
+                    apiListResponse(
+                        HttpStatusCode.OK,
+                        statusCode = 200,
+                        ls = listItems,
+                        message = "fetched successfully",
+                        status = true
+                    )
+                }
+            } catch (e: Exception) {
+                apiResponse(
+                    statusCode = 400,
+                    message = "${e.message}",
+                    status = false,
+                    statusCodeApi = HttpStatusCode.BadRequest,
+                )
+
+            }
+        }
         post("/send-email") {
             val emailData = call.receive<EmailData>()
             val result = sendEmail(
