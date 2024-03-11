@@ -32,7 +32,7 @@ fun main() {
 
     FirebaseApp.initializeApp(options)
 
-    embeddedServer(Netty, port = 8081, host = "0.0.0.0") {
+    embeddedServer(Netty, port = 8082, host = "0.0.0.0") {
         val databaseFactory = DatabaseFactory()
         val config = HoconApplicationConfig(ConfigFactory.load())
         install(ContentNegotiation){

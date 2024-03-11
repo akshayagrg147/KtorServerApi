@@ -93,6 +93,10 @@ data class subrating(
     val name: String? = null,
     val customerId: String? = null
 )
+data class OrderQtyDates(
+    val orderDate:String?=null,
+    val orderQuantity:Int?=-1
+)
 
 data class orderitem(
     val orderList: ArrayList<Orders>,
@@ -109,6 +113,14 @@ data class orderitem(
     var fcm_tokenSeller: ArrayList<String> = ArrayList(),
     var sellerId:String?=null,
     var listOfSellerId:ArrayList<String>?=null
+)
+data class orderitemBarGraoh(
+
+    var createdDate: String,
+    var pincode:String?=null,
+    var sellerId:String?=null,
+    var quantity:Int?=null
+
 )
 
 data class Orders(

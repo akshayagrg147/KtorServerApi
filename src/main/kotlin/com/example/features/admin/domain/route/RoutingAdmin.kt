@@ -288,6 +288,33 @@ fun Route.adminRoute(
 
                 }
             }
+        get("/AllOrdersDelivered") {
+            try {
+                val sellerId = call.parameters["sellerId"]
+                val startDate = call.parameters["startDate"]
+                val endDate = call.parameters["endDate"]
+
+                val orders =
+                    db.getAllOrderBasedOnDateRange(sellerId.toString(), startDate.toString(), endDate)
+                apiListResponse(
+                    HttpStatusCode.OK,
+                    statusCode = 200,
+                    ls = orders,
+                    message = "fetched successfully",
+                    status = true
+                )
+
+            } catch (e: Exception) {
+                apiResponse(
+                    statusCode = 400,
+                    message = "${e.message}",
+                    status = false,
+                    statusCodeApi = HttpStatusCode.BadRequest,
+                )
+
+            }
+
+        }
             get("/AllOrdersByPages") {
                 try {
                     val pinCode = call.parameters["pincode"]

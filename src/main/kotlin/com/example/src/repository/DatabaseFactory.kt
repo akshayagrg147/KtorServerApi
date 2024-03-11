@@ -15,8 +15,15 @@ import org.bson.Document
 import org.litote.kmongo.*
 import org.litote.kmongo.coroutine.CoroutineCollection
 import org.litote.kmongo.coroutine.coroutine
+import org.litote.kmongo.coroutine.insertOne
+import org.litote.kmongo.coroutine.updateOne
 import org.litote.kmongo.reactivestreams.KMongo
 import java.net.URLEncoder
+import java.text.SimpleDateFormat
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.util.*
+import kotlin.collections.ArrayList
 
 class DatabaseFactory {
     private val username = URLEncoder.encode("akshaygarg147", "UTF-8")
@@ -26,6 +33,7 @@ class DatabaseFactory {
     private val database = client.getDatabase("groceryMain")
     val userCollection: CoroutineCollection<Users> = database.getCollection()
     val orderdetails: CoroutineCollection<orderitem> = database.getCollection()
+    val orderSummaryGraph: CoroutineCollection<orderitemBarGraoh> = database.getCollection()
     val home_collections: CoroutineCollection<HomeProducts> = database.getCollection()
     val adminAcessCollection: CoroutineCollection<adminAcess> = database.getCollection()
    val exclusiveCollection: CoroutineCollection<exclusiveOffers> = database.getCollection()
@@ -82,7 +90,40 @@ class DatabaseFactory {
 
     suspend fun orderdetails(order: orderitem): orderitem {
         // Assuming `orderdetails` is a MongoDB collection
+        val orderDate = order.createdDate.split(" ")[0]
         orderdetails.insertOne(order)
+        if(order.listOfSellerId?.isNotEmpty()==true)
+        for(order1 in order.listOfSellerId?: emptyList()){
+            val fetchData=orderSummaryGraph.find(orderitemBarGraoh::sellerId eq order1,orderitemBarGraoh::createdDate eq orderDate.toString())
+            val newQuantity = fetchData.first()?.quantity?.plus(1) ?: 1
+            if(newQuantity==1)
+            orderSummaryGraph.insertOne(orderitemBarGraoh(createdDate = orderDate.toString(), pincode = order.pincode, sellerId = order1, quantity =
+              newQuantity))
+            else {
+                val filter = Document(
+                    "\$and",
+                    listOf(
+                        Document("sellerId", order1),
+                        Document("createdDate", orderDate)
+                    )
+                )
+                val update = Document(
+                    "\$set",
+                    Document("createdDate", orderDate)
+
+                        .append("pincode", order.pincode)
+
+                        .append("sellerId", order1)
+                        .append("quantity", newQuantity)
+
+
+                )
+                orderdetails.insertOne(order)
+                orderSummaryGraph.updateOne(filter, update)
+            }
+
+        }
+
 
         val fcmTokens: List<adminAcess> = order.listOfSellerId?.flatMap { sellerId ->
             adminAcessCollection.find(
@@ -105,6 +146,38 @@ class DatabaseFactory {
 
        return orderdetails.find(orderitem::orderStatus eq status.replace("\"", ""),if(sellerId?.isNotEmpty()==true)orderitem::fcm_tokenSeller contains sellerId.replace("\"", "") else null,if(pincode?.isNotEmpty()==true)orderitem::pincode eq pincode.replace("\"", "") else null).toList()
 
+    }
+
+    suspend fun getAllOrderBasedOnDateRange(sellerId: String, startDate: String, endDate: String? = null): MutableList<OrderQtyDates> {
+        val ls: MutableList<OrderQtyDates> = mutableListOf()
+
+        val sdf = SimpleDateFormat("dd/MM/yyyy")
+        var startDateTrimmed = startDate.trim()
+        var endDateTrimmed = (endDate ?: startDate).trim()
+
+        var currentDate = sdf.parse("$startDateTrimmed")
+        val endDateParsed = sdf.parse("$endDateTrimmed")
+
+        while (currentDate <= endDateParsed) {
+            val formattedDate = sdf.format(currentDate)
+            println("Formatted Date: $formattedDate") // Print for debugging
+
+            val orderCount = orderSummaryGraph.find(
+                orderitemBarGraoh::createdDate eq formattedDate,
+                orderitemBarGraoh::sellerId eq sellerId
+            ).toList()
+            if(orderCount.isNotEmpty())
+                ls.add(OrderQtyDates(formattedDate, orderCount.get(0).quantity))
+            else
+                ls.add(OrderQtyDates(formattedDate, 0))
+
+            val calendar = Calendar.getInstance()
+            calendar.time = currentDate
+            calendar.add(Calendar.DAY_OF_MONTH, 1)
+            currentDate = calendar.time
+        }
+
+        return ls
     }
     suspend fun getAllOrderPagination(skip: Int?, limit: Int?,pincode: String,sellerId:String): List<orderitem> =
         orderdetails.find(orderitem::pincode eq pincode.replace("\"", ""),orderitem::sellerId eq sellerId.replace("\"", "")).skip(skip ?: 0).limit(limit ?: 0).toList()
