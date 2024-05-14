@@ -61,6 +61,9 @@ class DatabaseFactory {
     suspend fun getProductCategory(pincode:String,sellerId:String?=null): List<ProductCategory> {
         return adminItemCategory.find(ProductCategory::pincode eq pincode.replace("\"", ""),if(sellerId?.isNotEmpty()==true)ProductCategory::sellerId eq sellerId.replace("\"", "") else null).toList()
     }
+    suspend fun getProductCategoryWise(pincode:String,sellerId:String?=null): List<HomeProducts> {
+        return home_collections.find(HomeProducts::pincode eq pincode.replace("\"", "")).toList()
+    }
     suspend fun getAllProductCategory(sellerId:String?=null): List<ProductCategory> {
         return adminItemCategory.find(if(sellerId?.isNotEmpty()==true)ProductCategory::sellerId eq sellerId.replace("\"", "") else null).toList()
     }
@@ -89,62 +92,126 @@ class DatabaseFactory {
     }
 
     suspend fun orderdetails(order: orderitem): orderitem {
-        // Assuming `orderdetails` is a MongoDB collection
-        val orderDate = order.createdDate.split(" ")[0]
-        orderdetails.insertOne(order)
-        if(order.listOfSellerId?.isNotEmpty()==true)
-        for(order1 in order.listOfSellerId?: emptyList()){
-            val fetchData=orderSummaryGraph.find(orderitemBarGraoh::sellerId eq order1,orderitemBarGraoh::createdDate eq orderDate.toString())
-            val newQuantity = fetchData.first()?.quantity?.plus(1) ?: 1
-            if(newQuantity==1)
-            orderSummaryGraph.insertOne(orderitemBarGraoh(createdDate = orderDate.toString(), pincode = order.pincode, sellerId = order1, quantity =
-              newQuantity))
-            else {
-                val filter = Document(
-                    "\$and",
-                    listOf(
-                        Document("sellerId", order1),
-                        Document("createdDate", orderDate)
-                    )
-                )
-                val update = Document(
-                    "\$set",
-                    Document("createdDate", orderDate)
-
-                        .append("pincode", order.pincode)
-
-                        .append("sellerId", order1)
-                        .append("quantity", newQuantity)
+        val orderTemp=order
 
 
-                )
-                orderdetails.insertOne(order)
-                orderSummaryGraph.updateOne(filter, update)
+
+
+
+        val fcmAdded:ArrayList<String> = arrayListOf()
+
+        val groupedOrders: HashMap<String, ArrayList<Orders>> = HashMap()
+        order.orderList.forEach { eachOrderDetail ->
+            val sellerId = eachOrderDetail.sellerIdName
+            if (sellerId != null) {
+                if (groupedOrders.containsKey(sellerId)) {
+                    groupedOrders[sellerId]?.add(eachOrderDetail)
+                } else {
+                    val newList = arrayListOf(eachOrderDetail)
+                    groupedOrders[sellerId] = newList
+                }
             }
+
+            val orderDate = order.createdDate.split(" ")[0]
+
+
+            val fetchData = orderSummaryGraph.find(orderitemBarGraoh::sellerId eq eachOrderDetail.sellerIdName, orderitemBarGraoh::createdDate eq orderDate.toString())
+            val newQuantityGraph = fetchData.first()?.quantity?.plus(1) ?: 1
+
+            val filter = Document(
+                "\$and",
+                listOf(
+                    Document("sellerId", eachOrderDetail.sellerIdName),
+                    Document("createdDate", orderDate)
+                )
+            )
+            val summaryUpdate = Document(
+                "\$set",
+                Document("createdDate", orderDate)
+
+                    .append("pincode", order.pincode)
+
+                    .append("sellerId", eachOrderDetail.sellerIdName,)
+                    .append("quantity", newQuantityGraph)
+            )
+
+            if (newQuantityGraph == 1) {
+                orderSummaryGraph.insertOne(orderitemBarGraoh(createdDate = orderDate.toString(), pincode = order.pincode, sellerId = eachOrderDetail.sellerIdName, quantity = newQuantityGraph))
+            } else {
+                orderSummaryGraph.updateOne(filter, summaryUpdate)
+            }
+
+            val fcmTokens: List<adminAcess> =
+                adminAcessCollection.find(
+                    and(
+                        adminAcess::pincode eq order.pincode,
+                        adminAcess::sellerId eq eachOrderDetail.sellerIdName,
+                    )
+                ).toList()
+
+
+
+            fcmAdded.addAll(fcmTokens.map { it.fcm_token.toString() })
+
 
         }
 
 
-        val fcmTokens: List<adminAcess> = order.listOfSellerId?.flatMap { sellerId ->
-            adminAcessCollection.find(
-                and(
-                    adminAcess::pincode eq order.pincode,
-                    adminAcess::sellerId eq sellerId
-                )
-            ).toList()
-        } ?: emptyList()
 
-        order.sellerId = ""
-        order.fcm_tokenSeller = ArrayList()
-        order.fcm_tokenSeller.addAll(fcmTokens.map { it.fcm_token.toString() })
-        return order
+        order.fcm_tokenSeller=fcmAdded
+        var totalItemCount=0
+        var combineOrderId=""
+        groupedOrders.forEach { (sellerId, orders) ->
+            order.orderList=orders
+            order.sellerId = sellerId
+            order.orderId = "OD${System.currentTimeMillis()}"
+            combineOrderId += order.orderId+"\n"
+            var priceAdded=0
+            for( itemprice in orders){
+                priceAdded= (priceAdded + (itemprice.productprice?.toInt() ?: 0))
+                totalItemCount += 1
+
+            }
+            order.totalOrderValue=priceAdded.toString()
+            orderdetails.insertOne(order)
+
+        }
+        val obj = userCollection.find(Users::phone eq order.mobilenumber).first()
+        val newQuantity = obj?.order?.first()?.plus(totalItemCount) ?: 1
+        val update = Document(
+            "\$set",
+            Document("email", obj?.email)
+
+                .append("name", obj?.name)
+                .append("phone", obj?.phone)
+                .append("cancel",obj?.cancel)
+                .append("deliver",obj?.deliver)
+                .append("order", newQuantity)
+                .append("profileImage", obj?.profileImage)
+                .append("fcmtoken", obj?.fcmtoken)
+                .append("changetime",System.currentTimeMillis().toDouble()))
+        userCollection.updateOne(Document("phone", obj?.phone), update)
+
+
+
+
+        orderTemp.fcm_tokenSeller=fcmAdded
+        orderTemp.orderId=combineOrderId
+
+
+
+
+
+
+        return orderTemp
 
     }
 
 
+
     suspend fun getAllOrder(status:String,mobileNumber:String?=null,pincode:String?=null,sellerId:String?=null): List<orderitem> {
 
-       return orderdetails.find(orderitem::orderStatus eq status.replace("\"", ""),if(sellerId?.isNotEmpty()==true)orderitem::fcm_tokenSeller contains sellerId.replace("\"", "") else null,if(pincode?.isNotEmpty()==true)orderitem::pincode eq pincode.replace("\"", "") else null).toList()
+       return orderdetails.find(orderitem::orderStatus eq status.replace("\"", ""),if(sellerId?.isNotEmpty()==true)orderitem::sellerId eq sellerId.replace("\"", "") else null,if(pincode?.isNotEmpty()==true)orderitem::pincode eq pincode.replace("\"", "") else null).toList()
 
     }
 
@@ -160,6 +227,7 @@ class DatabaseFactory {
 
         while (currentDate <= endDateParsed) {
             val formattedDate = sdf.format(currentDate)
+            val dayName = SimpleDateFormat("EEE").format(currentDate.time)
             println("Formatted Date: $formattedDate") // Print for debugging
 
             val orderCount = orderSummaryGraph.find(
@@ -167,9 +235,9 @@ class DatabaseFactory {
                 orderitemBarGraoh::sellerId eq sellerId
             ).toList()
             if(orderCount.isNotEmpty())
-                ls.add(OrderQtyDates(formattedDate, orderCount.get(0).quantity))
+                ls.add(OrderQtyDates(dayName, orderCount.get(0).quantity))
             else
-                ls.add(OrderQtyDates(formattedDate, 0))
+                ls.add(OrderQtyDates(dayName, 0))
 
             val calendar = Calendar.getInstance()
             calendar.time = currentDate
@@ -223,33 +291,79 @@ class DatabaseFactory {
     suspend fun getAllAdmins(): List<adminAcess> = adminAcessCollection.find().toList()
 
     suspend fun setOrderStatus(req: orderitem,sendEmail:(String)->Unit): Long {
-        val update = Document(
-            "\$set",
-            Document("orderId", req.orderId)
+        var result =0L
 
-                .append("totalOrderValue", req.totalOrderValue)
+if(req.orderStatus=="Cancelled") {
+    val obj = userCollection.find(Users::phone eq req.mobilenumber).first()
+    val objDatabase = orderdetails.find(orderitem::orderId eq req.orderId).first()
+    if(objDatabase?.isStatusAlreadyUpdated==true){
+        return -1//means already updated
+    }
+    val newQuantity = obj?.cancel?.first()?.plus(1) ?: 1
+    val updateData = Document(
+        "\$set",
+        Document("email", obj?.email)
 
-                .append("orderList", req.orderList)
-                .append("address", req.address)
-                .append("createdDate", req.createdDate)
-                .append("mobilenumber", req.mobilenumber)
-                .append("paymentmode", req.paymentmode)
-                .append("pincode", req.pincode)
-                .append("changeTime", req.changeTime)
-                .append("orderStatus", req.orderStatus)
+            .append("name", obj?.name)
+            .append("phone", obj?.phone)
+            .append("cancel", newQuantity)
+            .append("deliver", obj?.deliver)
+            .append("order", obj?.order)
+            .append("isStatusAlreadyUpdated",true)
+            .append("profileImage", obj?.profileImage)
+            .append("fcmtoken", obj?.fcmtoken)
+            .append("changetime", System.currentTimeMillis().toDouble())
+    )
+    result= userCollection.updateOne(Document("phone", obj?.phone), updateData).modifiedCount
+}
+        else if(req.orderStatus=="Delivered") {
+    val obj = userCollection.find(Users::phone eq req.mobilenumber).first()
+    val newQuantity = obj?.deliver?.first()?.plus(1) ?: 1
+    val updateData = Document(
+        "\$set",
+        Document("email", obj?.email)
 
-        )
+            .append("name", obj?.name)
+            .append("phone", obj?.phone)
+            .append("cancel", obj?.cancel)
+            .append("deliver", newQuantity)
+            .append("order", obj?.order)
+            .append("isStatusAlreadyUpdated",true)
+            .append("profileImage", obj?.profileImage)
+            .append("fcmtoken", obj?.fcmtoken)
+            .append("changetime", System.currentTimeMillis().toDouble())
+    )
+    result=userCollection.updateOne(Document("phone", obj?.phone), updateData).modifiedCount
+}
+        else{
+
+    val update = Document(
+        "\$set",
+        Document("orderId", req.orderId)
+
+            .append("totalOrderValue", req.totalOrderValue)
+
+            .append("orderList", req.orderList)
+            .append("isStatusAlreadyUpdated",true)
+            .append("address", req.address)
+            .append("createdDate", req.createdDate)
+            .append("mobilenumber", req.mobilenumber)
+            .append("paymentmode", req.paymentmode)
+            .append("pincode", req.pincode)
+            .append("changeTime", req.changeTime)
+            .append("orderStatus", req.orderStatus)
+
+    )
 
 
-        val result = orderdetails.updateOne(Document("orderId", req.orderId), update)
-        if(result.modifiedCount>0){
-            val obj= userCollection.find(( Users::phone eq req.mobilenumber.replace("+",""))).first()
-          //  sendNotification(obj?.fcmtoken?:"","order ${req.orderStatus} ","check your orders")
-            //sendEmail(obj?.email?:"")
+     result = orderdetails.updateOne(Document("orderId", req.orderId), update).modifiedCount
+//    if(result.modifiedCount>0){
+//        val obj= userCollection.find(( Users::phone eq req.mobilenumber.replace("+",""))).first()
+//        //  sendNotification(obj?.fcmtoken?:"","order ${req.orderStatus} ","check your orders")
+//        //sendEmail(obj?.email?:"")
+//    }
         }
-
-
-        return result.modifiedCount
+        return result
     }
 
 
@@ -392,6 +506,9 @@ class DatabaseFactory {
                 .append("name", obj?.name)
 
                 .append("phone", obj?.phone)
+                .append("cancel",obj?.cancel)
+                .append("deliver",obj?.deliver)
+                .append("order",obj?.order)
                 .append("profileImage", obj?.profileImage)
                 .append("fcmtoken", token)
                 .append("changetime",System.currentTimeMillis().toDouble())

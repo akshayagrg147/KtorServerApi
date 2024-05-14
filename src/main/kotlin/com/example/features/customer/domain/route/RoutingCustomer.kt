@@ -89,6 +89,62 @@ fun Route.userRoute(
 
             }
         }
+        post("/getUserDetails") {
+            try {
+                val requestBody = call.receive<UserRequest>()
+                if (requestBody.phone != null) {
+                    val user = db.getUserByPhone(requestBody.phone)
+//                    val order = db.getAllOrder("Ordered", requestBody.phone, requestBody.pincode)
+//                    val deliver = db.getAllOrder("Delivered", requestBody.phone, requestBody.pincode)
+//                    val cancel = db.getAllOrder("Cancelled", requestBody.phone, requestBody.pincode)
+                    user?.cancel = user?.cancel.toString()
+                    user?.deliver =  user?.deliver.toString()
+                    user?.order = user?.order.toString()
+
+                    call.respond(status = HttpStatusCode.OK, UserProfileResponse(user, 200, "fetched successfully"))
+                } else {
+                    call.respond(
+                        status = HttpStatusCode.OK,
+                        UserProfileResponse(null, 400, "mobile number incorrect")
+                    )
+
+                }
+            } catch (e: Exception) {
+                apiResponse(
+                    statusCode = 400,
+                    message = "${e.message}",
+                    status = false,
+                    statusCodeApi = HttpStatusCode.BadRequest,
+                )
+
+            }
+        }
+        post("/AllOrders") {
+            try {
+                val request = call.receive<String>().replace("\"status\":", "").replace("{", "").replace("}", "")
+                val status = request.split("@")[0]
+                val mobileNumber = request.split("@")[1]
+                val pincode = request.split("@")[2]
+                print("status_mobile_pincode ${status} $mobileNumber $pincode")
+                val orders = db.getAllOrder(status, mobileNumber, pincode.trim())
+                apiListResponse(
+                    HttpStatusCode.OK,
+                    statusCode = 200,
+                    ls = orders,
+                    message = "fetched successfully",
+                    status = true
+                )
+
+            } catch (e: Exception) {
+                apiResponse(
+                    statusCode = 400,
+                    message = "${e.message}",
+                    status = false,
+                    statusCodeApi = HttpStatusCode.BadRequest,
+                )
+
+            }
+        }
         authenticate("jwt") {
             get("/ExclusiveOffers") {
                 try {
@@ -152,7 +208,7 @@ fun Route.userRoute(
                     } else {
                         call.respond(
                             status = HttpStatusCode.BadRequest,
-                            ApiResponse(status = false, statusCode = 400, message = "please check request body")
+                            ApiResponse(status = false, statusCode = 200, message = "Can not updated")
                         )
                     }
                 } else {
@@ -356,36 +412,7 @@ fun Route.userRoute(
                 )
             }
 
-            post("/getUserDetails") {
-                try {
-                    val requestBody = call.receive<UserRequest>()
-                    if (requestBody.phone != null) {
-                        val user = db.getUserByPhone(requestBody.phone)
-                        val order = db.getAllOrder("Ordered", requestBody.phone, requestBody.pincode)
-                        val deliver = db.getAllOrder("Delivered", requestBody.phone, requestBody.pincode)
-                        val cancel = db.getAllOrder("Cancelled", requestBody.phone, requestBody.pincode)
-                        user?.cancel = cancel.size.toString()
-                        user?.deliver = deliver.size.toString()
-                        user?.order = order.size.toString()
 
-                        call.respond(status = HttpStatusCode.OK, UserProfileResponse(user, 200, "fetched successfully"))
-                    } else {
-                        call.respond(
-                            status = HttpStatusCode.OK,
-                            UserProfileResponse(null, 400, "mobile number incorrect")
-                        )
-
-                    }
-                } catch (e: Exception) {
-                    apiResponse(
-                        statusCode = 400,
-                        message = "${e.message}",
-                        status = false,
-                        statusCodeApi = HttpStatusCode.BadRequest,
-                    )
-
-                }
-            }
             get("/HomeAllProducts") {
                 try {
 
@@ -497,7 +524,7 @@ fun Route.userRoute(
                     val formattedDate = dateFormat.format(cal.time)
                     val formattedTime = timeFormat.format(cal.time)
                     requestBodyItem.createdDate = "$formattedDate $formattedTime"
-                    requestBodyItem.orderId = "OD${System.currentTimeMillis()}"
+
                     requestBodyItem.orderStatus = "Ordered"
 
                     for (requestBody in requestBodyItem.orderList) {
@@ -596,32 +623,7 @@ fun Route.userRoute(
 
                 }
             }
-            post("/AllOrders") {
-                try {
-                    val request = call.receive<String>().replace("\"status\":", "").replace("{", "").replace("}", "")
-                    val status = request.split("@")[0]
-                    val mobileNumber = request.split("@")[1]
-                    val pincode = request.split("@")[2]
-                    print("status_mobile_pincode ${status} $mobileNumber $pincode")
-                    val orders = db.getAllOrder(status, mobileNumber, pincode.trim())
-                    apiListResponse(
-                        HttpStatusCode.OK,
-                        statusCode = 200,
-                        ls = orders,
-                        message = "fetched successfully",
-                        status = true
-                    )
 
-                } catch (e: Exception) {
-                    apiResponse(
-                        statusCode = 400,
-                        message = "${e.message}",
-                        status = false,
-                        statusCodeApi = HttpStatusCode.BadRequest,
-                    )
-
-                }
-            }
             post("/GetBestProductById") {
                 try {
                     val requestBody = call.receive<SearchByProductId>()

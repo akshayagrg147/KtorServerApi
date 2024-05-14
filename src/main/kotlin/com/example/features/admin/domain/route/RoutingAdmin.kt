@@ -36,6 +36,7 @@ fun Route.adminRoute(
             requestBody.changeTime = System.currentTimeMillis().toDouble()
             if (requestBody.orderStatus?.isNotEmpty() == true) {
 
+
                 if (db.setOrderStatus(requestBody) {
                         if (it.isNotEmpty()) {
                             val result = sendEmail(
@@ -66,7 +67,7 @@ fun Route.adminRoute(
                 } else {
                     call.respond(
                         status = HttpStatusCode.BadRequest,
-                        ApiResponse(status = false, statusCode = 400, message = "please check request body")
+                        ApiResponse(status = false, statusCode = 200, message = "Can not updated")
                     )
                 }
             } else {

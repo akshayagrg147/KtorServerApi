@@ -13,9 +13,9 @@ data class Users(
     val name: String?= null,
     val phone:String?=null,
     val profileImage:String?=null,
-    var order: String?=null,
-    var cancel: String?=null,
-    var deliver: String?=null,
+    var order: String?="0",
+    var cancel: String?="0",
+    var deliver: String?="0",
     val fcmtoken:String?=null,
     val changetime:String?=null
 )
