@@ -519,7 +519,7 @@ fun Route.userRoute(
                     val cal = Calendar.getInstance()
 
                     val dateFormat = SimpleDateFormat("dd/MM/yyyy")
-                    val timeFormat = SimpleDateFormat("HH:mm:ss")
+                    val timeFormat = SimpleDateFormat("hh:mm:ss")
                     // Format the date from the Calendar instance
                     val formattedDate = dateFormat.format(cal.time)
                     val formattedTime = timeFormat.format(cal.time)

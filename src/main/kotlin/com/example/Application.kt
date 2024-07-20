@@ -9,8 +9,11 @@ import com.google.auth.oauth2.GoogleCredentials
 import com.google.firebase.FirebaseApp
 import com.google.firebase.FirebaseOptions
 import com.typesafe.config.ConfigFactory
+import io.ktor.client.*
 import io.ktor.http.*
 import io.ktor.serialization.gson.*
+import io.ktor.serialization.kotlinx.*
+import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.auth.jwt.*
@@ -20,6 +23,7 @@ import io.ktor.server.netty.*
 import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.plugins.cors.routing.*
 import io.ktor.server.routing.*
+import kotlinx.serialization.json.Json
 import java.io.FileInputStream
 
 
@@ -32,7 +36,7 @@ fun main() {
 
     FirebaseApp.initializeApp(options)
 
-    embeddedServer(Netty, port = 8082, host = "0.0.0.0") {
+    embeddedServer(Netty, port = 8083, host = "0.0.0.0") {
         val databaseFactory = DatabaseFactory()
         val config = HoconApplicationConfig(ConfigFactory.load())
         install(ContentNegotiation){
@@ -40,6 +44,15 @@ fun main() {
                 setPrettyPrinting()
                 disableHtmlEscaping()
             }
+            register(
+                ContentType.Text.Html, KotlinxSerializationConverter(
+                    Json {
+                        prettyPrint = true
+                        isLenient = true
+                        ignoreUnknownKeys = true
+                    }
+                ))
+
         }
 
         install(Authentication) {
@@ -70,8 +83,8 @@ fun main() {
         install(CORS) {
             // Set to true if you want to allow the same origin. It's false by default.
             anyHost()
-            allowHost("localhost:53750")
-            allowHost("0.0.0.0:8084")
+            allowHost("localhost:49734")
+            allowHost("0.0.0.0:8082")
             // Alternatively, specify allowed hosts:
             // host("my-host:8080")
             // host("my-host2:8080", schemes = listOf("http", "https"))

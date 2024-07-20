@@ -150,7 +150,7 @@ fun Route.adminRoute(
                 } else {
                     apiClassResponse(
                         statusCode = 400,
-                        message = " Logged failed",
+                        message = " Login failed",
                         status = true,
                         response = adminAcess(null, null, null),
                         statusCodeApi = HttpStatusCode.BadRequest,
@@ -159,7 +159,7 @@ fun Route.adminRoute(
             } catch (e: Exception) {
                 apiResponse(
                     statusCode = 400,
-                    message = "${e.message}",
+                    message = "Login failed",
                     status = false,
                     statusCodeApi = HttpStatusCode.BadRequest,
                 )

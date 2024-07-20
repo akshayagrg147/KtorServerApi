@@ -14,7 +14,7 @@ data class JwtConfig(val secret: String, val issuer: String, val audience: Strin
 
 fun generateToken(user: Users, jwtConfig: JwtConfig): String {
     val now = Date()
-    val expiresAt = Date(now.time + (24 * 60 * 60 * 1000 )) // Token expires in 24 hours  into 30 days
+    val expiresAt = Date(now.time + (15*24 * 60 * 60 * 1000 )) // Token expires in 24 hours  into 30 days
 
     return JWT.create()
         .withSubject(user.userId)
@@ -25,7 +25,7 @@ fun generateToken(user: Users, jwtConfig: JwtConfig): String {
 }
 fun generateTokenAdmin(user: RequestLoginBody, jwtConfig: JwtConfig): String {
     val now = Date()
-    val expiresAt = Date(now.time + (24 * 60 * 60 * 1000 )) // Token expires in 24 hours  into 30 days
+    val expiresAt = Date(now.time + (15*24 * 60 * 60 * 1000 )) // Token expires in 24 hours  into 30 days
 
     return JWT.create()
         .withSubject(user.email)
