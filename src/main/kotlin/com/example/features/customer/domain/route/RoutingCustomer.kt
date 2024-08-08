@@ -126,7 +126,7 @@ fun Route.userRoute(
                 val mobileNumber = request.split("@")[1]
                 val pincode = request.split("@")[2]
                 print("status_mobile_pincode ${status} $mobileNumber $pincode")
-                val orders = db.getAllOrder(status, mobileNumber, pincode.trim())
+                val orders = db.getAllOrder1(status, mobileNumber, pincode.trim())
                 apiListResponse(
                     HttpStatusCode.OK,
                     statusCode = 200,

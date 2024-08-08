@@ -99,7 +99,7 @@ data class OrderQtyDates(
 )
 
 data class orderitem(
-    var orderList: ArrayList<Orders>,
+    var orderList: List<Orders>,
     var totalOrderValue: String? = null,
     val paymentmode: String? = null,
     var changeTime:Double,
@@ -111,7 +111,7 @@ data class orderitem(
     var pincode:String?=null,
     var isStatusAlreadyUpdated:Boolean?=false,
 
-    var fcm_tokenSeller: ArrayList<String> = ArrayList(),
+    var fcm_tokenSeller: MutableList<String> = mutableListOf(),
     var sellerId:String?=null,
     var listOfSellerId:ArrayList<String>?=null
 )
