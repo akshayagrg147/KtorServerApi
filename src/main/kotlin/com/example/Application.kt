@@ -12,7 +12,6 @@ import com.typesafe.config.ConfigFactory
 import io.ktor.client.*
 import io.ktor.http.*
 import io.ktor.serialization.gson.*
-import io.ktor.serialization.kotlinx.*
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
@@ -26,7 +25,6 @@ import io.ktor.server.routing.*
 import kotlinx.serialization.json.Json
 import java.io.FileInputStream
 
-
 fun main() {
     val serviceAccount = object {}.javaClass.getResourceAsStream("/adminsdk.json")
 
@@ -39,20 +37,20 @@ fun main() {
     embeddedServer(Netty, port = 8083, host = "0.0.0.0") {
         val databaseFactory = DatabaseFactory()
         val config = HoconApplicationConfig(ConfigFactory.load())
-        install(ContentNegotiation){
+
+        install(ContentNegotiation) {
             gson {
                 setPrettyPrinting()
                 disableHtmlEscaping()
             }
-            register(
-                ContentType.Text.Html, KotlinxSerializationConverter(
-                    Json {
-                        prettyPrint = true
-                        isLenient = true
-                        ignoreUnknownKeys = true
-                    }
-                ))
-
+            // Register Kotlinx Serialization with JSON configuration for content negotiation
+            json(
+                Json {
+                    prettyPrint = true
+                    isLenient = true
+                    ignoreUnknownKeys = true
+                }
+            )
         }
 
         install(Authentication) {
@@ -73,31 +71,19 @@ fun main() {
             }
         }
 
-        routing{
+        routing {
             userRoute(databaseFactory)
             adminRoute(databaseFactory)
         }
 
-
-
         install(CORS) {
-            // Set to true if you want to allow the same origin. It's false by default.
+            // Allow requests from any host (use with caution in production)
             anyHost()
+            // Alternatively, specify allowed hosts
             allowHost("localhost:49734")
-            allowHost("0.0.0.0:8082")
-            // Alternatively, specify allowed hosts:
-            // host("my-host:8080")
-            // host("my-host2:8080", schemes = listOf("http", "https"))
+            allowHost("0.0.0.0:8083")
 
-            // Specify which headers can be used in a request
-            allowHeader(HttpHeaders.XForwardedProto)
-            allowHeader(HttpHeaders.ContentType)
-            allowHeader(HttpHeaders.AccessControlAllowOrigin)
-
-            // If you don't want to support a header in your request, you can exclude it
-            // exposeHeader("")
-
-            // Specify which HTTP methods are allowed. By default, it allows only GET, POST, and HEAD.
+            // Allow common HTTP methods
             allowMethod(HttpMethod.Options)
             allowMethod(HttpMethod.Put)
             allowMethod(HttpMethod.Patch)
@@ -105,19 +91,21 @@ fun main() {
             allowMethod(HttpMethod.Get)
             allowMethod(HttpMethod.Post)
 
-            // You can also apply settings like:
+            // Allow headers
+            allowHeader(HttpHeaders.XForwardedProto)
+            allowHeader(HttpHeaders.ContentType)
+            allowHeader(HttpHeaders.AccessControlAllowOrigin)
+
+            // Support credentials and non-simple content types
             allowCredentials = true
-            allowSameOrigin=true
             allowNonSimpleContentTypes = true
-            allowNonSimpleContentTypes = true
-            maxAgeInSeconds = 1728000 // Specifies how long the results of a preflight request can be cached. 20 days here.
+
+            // Set cache duration for preflight requests (20 days)
+            maxAgeInSeconds = 1728000
         }
 
-
     }.start(wait = true)
-
-
-
 }
-data class EmailData(val to: String, val subject: String, val body: String)
 
+// Email data class
+data class EmailData(val to: String, val subject: String, val body: String)
