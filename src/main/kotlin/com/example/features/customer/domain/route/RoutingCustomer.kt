@@ -25,6 +25,15 @@ fun Route.userRoute(
 ) {
 
     route("/Customers") {
+        post("/updateColumnName") {
+            db.updateSocietyPincode()
+            call.respond(
+                Message(
+                    "Please fill all informations", false, 401
+                )
+            )
+
+        }
         //Login
         post("/register") {
             val requestBody = call.receive<Users>()
@@ -59,7 +68,7 @@ fun Route.userRoute(
             try {
                 if (requestBody.phone != null) {
                     val isPhoneExist = db.checkNumberExist(requestBody.phone)
-                    if (isPhoneExist) {
+                    if (isPhoneExist.isNotEmpty()) {
                         val generateToken = generateToken(
                             requestBody, jwtConfig
                         )
@@ -145,10 +154,10 @@ fun Route.userRoute(
 
             }
         }
-        authenticate("jwt") {
+
             get("/ExclusiveOffers") {
                 try {
-                    val pincode = call.parameters["pincode"]
+                    val pincode = call.parameters["society_pincode"]
                     val product = db.getHomeAllProducts1(pincode ?: "")
                     val exclusive: List<HomeProducts> = product.filter { it.productExclusiveSelling }
                     apiListResponse(
@@ -169,6 +178,28 @@ fun Route.userRoute(
                     )
                 }
             }
+        get("/allSocieties") {
+            try {
+                val pincode = call.parameters["society_pincode"]
+                val allSocities: List<SocietyList> = listOf(SocietyList("sector 95a,Roselia",1))
+                apiListResponse(
+                    HttpStatusCode.OK,
+                    statusCode = 200,
+                    ls = allSocities,
+                    message = "fetched successfully",
+                    status = true
+                )
+
+
+            } catch (e: Exception) {
+                apiResponse(
+                    statusCode = 400,
+                    message = "${e.message}",
+                    status = false,
+                    statusCodeApi = HttpStatusCode.BadRequest,
+                )
+            }
+        }
             get("/CancelOrder"){
 
             }
@@ -222,7 +253,7 @@ fun Route.userRoute(
             //admin
             get("/getProductCategory") {
                 try {
-                    val pincode = call.parameters["pincode"]
+                    val pincode = call.parameters["society_pincode"]
                     val product = db.getProductCategory(pincode.toString())
                     apiListResponse(
                         HttpStatusCode.OK,
@@ -244,7 +275,7 @@ fun Route.userRoute(
             }
             get("/allCoupons") {
                 try {
-                    val pincode = call.parameters["pincode"]
+                    val pincode = call.parameters["society_pincode"]
                     val couponResponse = db.getAllCoupons(pincode)
                     val currentDateString = SimpleDateFormat("yyyy-MM-dd").format(Date())
                     // Compare the two date strings
@@ -274,7 +305,7 @@ fun Route.userRoute(
             //----
             get("/getBannerCategory") {
                 try {
-                    val pincode = call.parameters["pincode"]
+                    val pincode = call.parameters["society_pincode"]
                     val product = db.getBannerCategory(pincode.toString())
                     if (product.isNotEmpty()) apiListResponse(
                         HttpStatusCode.OK,
@@ -308,7 +339,7 @@ fun Route.userRoute(
                 try {
                     val requestBody = call.receive<SearchByProductId>()
                     if (requestBody.ProductId != null) {
-                        val listItems = db.getProductSubItems(requestBody.ProductId, requestBody.pincode)
+                        val listItems = db.getProductSubItems(requestBody.ProductId, requestBody.society_pincode)
                         apiListResponse(
                             HttpStatusCode.OK,
                             statusCode = 200,
@@ -333,7 +364,7 @@ fun Route.userRoute(
                 try {
                     val requestBody = call.receive<SearchByProductId>()
                     if (requestBody.ProductId != null) {
-                        val listItems = db.getProductSubItems(requestBody.ProductId, requestBody.pincode)
+                        val listItems = db.getProductSubItems(requestBody.ProductId, requestBody.society_pincode)
                         apiListResponse(
                             HttpStatusCode.OK,
                             statusCode = 200,
@@ -355,7 +386,7 @@ fun Route.userRoute(
 
             get("/getProductCategory") {
                 try {
-                    val pincode = call.parameters["pincode"]
+                    val pincode = call.parameters["society_pincode"]
                     val product = db.getProductCategory(pincode.toString())
                     if (product.isNotEmpty()) apiListResponse(
                         HttpStatusCode.OK,
@@ -390,7 +421,7 @@ fun Route.userRoute(
 
                 val filterList: List<adminAvailable> = admins.map { adminAcess ->
                     adminAvailable(
-                        pincode = adminAcess.pincode,
+                        society_pincode = adminAcess.society_pincode,
                        price =  adminAcess.price,
                        city =  adminAcess.city,
                         sellerId = adminAcess.sellerId?:"",
@@ -423,7 +454,7 @@ fun Route.userRoute(
                         Integer.parseInt(skip),
                         Integer.parseInt(limit),
                         category?.split("__")?.get(0),
-                        pincode = category?.split("__")?.get(1)
+                        society_pincode = category?.split("__")?.get(1)
                     )
                     apiListResponse(
                         HttpStatusCode.OK,
@@ -446,7 +477,7 @@ fun Route.userRoute(
             get("/SearchAllProducts") {
                 try {
                     val value = call.parameters["query"]
-                    val pincode = call.parameters["pincode"]
+                    val pincode = call.parameters["society_pincode"]
                     if (value?.isNotEmpty() == true) {
                         val regex = Regex("${value}.*", RegexOption.IGNORE_CASE)
                         val product = db.getSearchAllProducts(regex, pincode)
@@ -471,7 +502,7 @@ fun Route.userRoute(
             }
             get("/BestSelling") {
                 try {
-                    val pincode = call.parameters["pincode"]
+                    val pincode = call.parameters["society_pincode"]
                     val product = db.getHomeAllProducts1(pincode.toString())
                     val best = product.filter { it.productBestSelling }
                     apiListResponse(
@@ -648,7 +679,7 @@ fun Route.userRoute(
             post("/GetRelatedSearch") {
                 try {
                     val requestBody = call.receive<RelatedSerachByPriceAndCategory>()
-                    val product = db.getRelatedSearch(requestBody.pincode!!).take(4)
+                    val product = db.getRelatedSearch(requestBody.society_pincode!!).take(4)
                     apiListResponse(
                         HttpStatusCode.OK,
                         statusCode = 200,
@@ -689,7 +720,7 @@ fun Route.userRoute(
             }
             get("/HomeCategoryWiseProducts") {
                 try {
-                    val pincode = call.parameters["pincode"]
+                    val pincode = call.parameters["society_pincode"]
                     val allCategory = db.getProductCategory(pincode.toString()).filter {
                         it.category != "Best Selling"
                     }.filter { it.category != "exclusive" }.filter {
@@ -802,7 +833,7 @@ fun Route.userRoute(
 
                 }
             }
-        }
+
 
     }
 }

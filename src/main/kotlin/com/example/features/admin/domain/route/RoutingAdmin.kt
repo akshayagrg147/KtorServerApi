@@ -131,7 +131,7 @@ fun Route.adminRoute(
             try {
                 val user = call.receive<RequestLoginBody>()
                 val product = db.userCheck(user.email, user.password)
-                if (product.pincode != null) {
+                if (product.society_pincode != null) {
 
                     val generateToken = generateTokenAdmin(
                         user, jwtConfig
@@ -190,7 +190,7 @@ fun Route.adminRoute(
                         requestBody.email!!,
                         requestBody.password!!,
                         requestBody.name!!,
-                        requestBody.pincode!!,
+                        requestBody.society_pincode!!,
                         requestBody.price!!,
                         requestBody.fcm_token!!,
                         requestBody.deliveryContactNumber!!,
@@ -318,7 +318,7 @@ fun Route.adminRoute(
         }
             get("/AllOrdersByPages") {
                 try {
-                    val pinCode = call.parameters["pincode"]
+                    val pinCode = call.parameters["society_pincode"]
                     val sellerId = call.parameters["sellerId"]
                     val skip = call.parameters["skip"]
                     val limit = call.parameters["limit"]
@@ -346,7 +346,7 @@ fun Route.adminRoute(
             get("/SearchAllProducts") {
                 try {
                     val value = call.parameters["query"]
-                    val pincode = call.parameters["pincode"]
+                    val pincode = call.parameters["society_pincode"]
                     val sellerId = call.parameters["sellerId"]
                     if (value?.isNotEmpty() == true) {
                         val regex = Regex("${value}.*", RegexOption.IGNORE_CASE)
@@ -375,10 +375,10 @@ fun Route.adminRoute(
                 try {
                     val skip = call.parameters["skip"]
                     val limit = call.parameters["limit"]
-                    val pincode = call.parameters["pincode"]
+                    val society_pincode = call.parameters["society_pincode"]
                     val sellerId = call.parameters["sellerId"]
                     val product = db.getHomeAllProducts(
-                        Integer.parseInt(skip), Integer.parseInt(limit), null, pincode = pincode,sellerId
+                        Integer.parseInt(skip), Integer.parseInt(limit), null, society_pincode = society_pincode,sellerId
                     )
                     apiListResponse(
                         HttpStatusCode.OK,
@@ -436,7 +436,7 @@ fun Route.adminRoute(
             }
             get("/allCoupons") {
                 try {
-                    val pincode = call.parameters["pincode"]
+                    val pincode = call.parameters["society_pincode"]
                     val couponResponse = db.getAllCoupons(pincode)
                     val currentDateString = SimpleDateFormat("yyyy-MM-dd").format(Date())
                     // Compare the two date strings
@@ -597,9 +597,9 @@ fun Route.adminRoute(
             }
             get("/getProductCategory") {
                 try {
-                    val pincode = call.parameters["pincode"]
+                    val society_pincode = call.parameters["society_pincode"]
                     val sellerId = call.parameters["sellerId"]
-                    val product = db.getProductCategory(pincode.toString(),sellerId.toString())
+                    val product = db.getProductCategory(society_pincode.toString(),sellerId.toString())
                     apiListResponse(
                         HttpStatusCode.OK,
                         statusCode = 200,
@@ -620,7 +620,7 @@ fun Route.adminRoute(
             }
             get("/getBannerCategory") {
                 try {
-                    val pincode = call.parameters["pincode"]
+                    val pincode = call.parameters["society_pincode"]
                     val sellerId = call.parameters["sellerId"]
                     val product = db.getBannerCategory(pincode.toString())
                     print("getbnnercategoryis ${product.size}  ${product}  ")
@@ -710,7 +710,7 @@ fun Route.adminRoute(
             }
             get("/RecentOrderCount") {
                 try {
-                    val pincode = call.parameters["pincode"]
+                    val pincode = call.parameters["society_pincode"]
                     val sellerId = call.parameters["sellerId"]
                     val orders = db.getAllOrder(status="Ordered",mobileNumber= null, pincode = pincode,sellerId=sellerId.toString())
                     val ordersFilter = orders.take(10)

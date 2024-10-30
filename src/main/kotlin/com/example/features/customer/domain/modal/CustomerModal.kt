@@ -19,13 +19,15 @@ data class HomeProducts(
     var rating: List<subrating> = emptyList<subrating>(),
     var item_subcategory_name: String? = null,
     var changeTime: Double? = null,
-    var pincode: String?=null,
+    var society_pincode: String?=null,
     var sellerId:String?=null
 )
-data class adminAcess(var email:String?=null, var password:String?=null, var pincode:String?=null, var name:String?=null, var price:String?=null, val city: String?=null, val deliveryContactNumber:String?=null, val fcm_token:String?=null,
+data class adminAcess(var email:String?=null, var password:String?=null, var society_pincode:String?=null, var name:String?=null, var price:String?=null, val city: String?=null, val deliveryContactNumber:String?=null, val fcm_token:String?=null,
                       var generateToken:String?=null,var sellerId:String?=null,var isSuperAdmin:String?=null,var lat:String?=null,var lng:String?=null,)
-data class adminAvailable(var pincode:String?=null,var price:String?=null,val city: String? ,val deliveryContactNumber:String,val sellerId: String,var lat:String?=null,var lng:String?=null, var categorySellerData:SellerCategoryData)
+data class adminAvailable(var society_pincode:String?=null,var price:String?=null,val city: String? ,val deliveryContactNumber:String,val sellerId: String,var lat:String?=null,var lng:String?=null, var categorySellerData:SellerCategoryData)
 data class SellerCategoryData(var sellerCatergoryList:List<CategoryImage?>)
+
+data class SocietyList(var name: String?,var id:Int)
 data class CategoryImage(var name: String?,var image: String,var sellerSubCatergoryList:List<String?>)
 data class exclusiveOffers(
     var productName: String = "",
@@ -59,13 +61,13 @@ data class bestSelling(
     var categoryType: Int = 0
 )
 
-data class SearchByProductId(val ProductId: String? = null,val pincode: String?=null, val sellerId: String? = null, val combineCategory: String? = null,)
+data class SearchByProductId(val ProductId: String? = null,val society_pincode: String?=null, val sellerId: String? = null, val combineCategory: String? = null,)
 data class CityAailibilty(val city: String? = null)
 data class ProductCategory(
     val category: String? = null,
     val imageUrl: String? = null,
     val subCategoryList: List<SubCategoryItem>,
-    val pincode:String?=null,
+    val society_pincode:String?=null,
     val sellerId:String?=null
 )
 data class BannerCategory(
@@ -76,7 +78,7 @@ data class BannerCategory(
     val bannercategory3: String? = null,
     val imageUrl3: String? = null,
     val subCategoryList: List<SubCategoryItem>?= emptyList(),
-    val pincode:String?=null,
+    val society_pincode:String?=null,
     var changetime:String?=null,
     var sellerId:String?=null
 
@@ -84,8 +86,8 @@ data class BannerCategory(
 
 data class SubCategoryItem(val name: String?, val subCategoryUrl: String? = null)
 
-data class RelatedSerachByPriceAndCategory(val Price: String? = null, val category: String? = null,val pincode:String?=null)
-data class UserRequest(val phone: String? = null,val pincode:String?=null)
+data class RelatedSerachByPriceAndCategory(val Price: String? = null, val category: String? = null,val society_pincode:String?=null)
+data class UserRequest(val phone: String? = null,val society_pincode:String?=null)
 data class PaginationPassing(val offset: Int? = 0, val limit: Int? = 0)
 data class subrating(
     val remark: String? = null,
@@ -108,7 +110,7 @@ data class orderitem(
     var createdDate: String,
     var orderId: String,
     var orderStatus:String?=null,
-    var pincode:String?=null,
+    var society_pincode:String?=null,
     var isStatusAlreadyUpdated:Boolean?=false,
 
     var fcm_tokenSeller: MutableList<String> = mutableListOf(),
@@ -138,7 +140,12 @@ data class Message(
     val statusCode: Int
 )
 
-data class CheckNumberExist(val isMobileExist: Boolean, val statusCode: Int, val status: Boolean, val JwtToken: String)
+data class CheckNumberExist(val isMobileExist: Boolean, val statusCode: Int, val status: Boolean, val JwtToken: String?=null,val customerName: String?=null,val society_pincode: String?=null,val city: String?=null,val landmark:String?=null,
+                            var buildingName:String?=null,
+                            var address: String?=null,
+                            var customerMobileNumber:String?=null)
+
+
 
 data class JwtResponse(
     val token: String,

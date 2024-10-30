@@ -17,6 +17,12 @@ data class Users(
     var cancel: String?="0",
     var deliver: String?="0",
     val fcmtoken:String?=null,
-    val changetime:String?=null
+    val selectedOption:String?=null,
+    val society_pincode:String?=null,
+    val flatNumber:String?=null,
+    val pincode:String?=null,
+    val city:String?=null,
+
 )
+
 

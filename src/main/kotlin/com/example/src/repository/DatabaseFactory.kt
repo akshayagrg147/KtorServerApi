@@ -1,29 +1,18 @@
 package com.example.src.repository
 
-import com.example.EmailData
-import com.example.features.admin.domain.route.sendEmail
 import com.example.features.customer.domain.modal.Users
 import com.example.src.modal.*
 import com.google.firebase.messaging.FirebaseMessaging
 import com.google.firebase.messaging.Message
-import io.ktor.http.*
-import io.ktor.server.application.*
-import io.ktor.server.request.*
-import io.ktor.server.response.*
 import org.bson.Document
 
 import org.litote.kmongo.*
 import org.litote.kmongo.coroutine.CoroutineCollection
 import org.litote.kmongo.coroutine.coroutine
-import org.litote.kmongo.coroutine.insertOne
-import org.litote.kmongo.coroutine.updateOne
 import org.litote.kmongo.reactivestreams.KMongo
 import java.net.URLEncoder
 import java.text.SimpleDateFormat
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
 import java.util.*
-import kotlin.collections.ArrayList
 
 class DatabaseFactory {
     private val username = URLEncoder.encode("akshaygarg147", "UTF-8")
@@ -59,16 +48,44 @@ class DatabaseFactory {
 
 
     suspend fun getProductCategory(pincode:String,sellerId:String?=null): List<ProductCategory> {
-        return adminItemCategory.find(ProductCategory::pincode eq pincode.replace("\"", ""),if(sellerId?.isNotEmpty()==true)ProductCategory::sellerId eq sellerId.replace("\"", "") else null).toList()
+        return adminItemCategory.find(ProductCategory::society_pincode eq pincode.replace("\"", ""),if(sellerId?.isNotEmpty()==true)ProductCategory::sellerId eq sellerId.replace("\"", "") else null).toList()
     }
     suspend fun getProductCategoryWise(pincode:String,sellerId:String?=null): List<HomeProducts> {
-        return home_collections.find(HomeProducts::pincode eq pincode.replace("\"", "")).toList()
+        return home_collections.find(HomeProducts::society_pincode eq pincode.replace("\"", "")).toList()
     }
+
+    suspend fun updateColumnName(): Long {
+        // No filter; this will apply to all documents in the collection
+        val query = org.litote.kmongo.EMPTY_BSON
+
+        // Use the $rename operator to rename the "pincode" field to "society_pincode"
+        val update = Document("\$rename", Document("pincode", "society_pincode"))
+
+        // Apply the update to rename the field in all documents
+        val updateResult = adminAcessCollection.updateMany(query, update)
+
+        // Return the count of documents that were modified
+        return updateResult.modifiedCount
+    }
+    suspend fun updateSocietyPincode(): Long {
+        // No filter; this will apply to all documents in the collection
+        val query = org.litote.kmongo.EMPTY_BSON
+
+        // Use the $set operator to update the "society_pincode" field for all documents
+        val update = Document("\$set", Document("society_pincode", "sector 95a,Roselia"))
+
+        // Apply the update to set the new value in all documents
+        val updateResult = adminAcessCollection.updateMany(query, update)
+
+        // Return the count of documents that were modified
+        return updateResult.modifiedCount
+    }
+
     suspend fun getAllProductCategory(sellerId:String?=null): List<ProductCategory> {
         return adminItemCategory.find(if(sellerId?.isNotEmpty()==true)ProductCategory::sellerId eq sellerId.replace("\"", "") else null).toList()
     }
     suspend fun getBannerCategory(pincode:String): List<BannerCategory> {
-        return adminBannerCategory.find(ProductCategory::pincode eq pincode.replace("\"", "")).toList()
+        return adminBannerCategory.find(ProductCategory::society_pincode eq pincode.replace("\"", "")).toList()
     }
 
     suspend fun addProductAdminDashboard(request: HomeProducts): HomeProducts {
@@ -114,7 +131,7 @@ class DatabaseFactory {
                         Document("createdDate", orderDate)
                     ))
                     val summaryUpdate = Document("\$set", Document("createdDate", orderDate)
-                        .append("pincode", order.pincode)
+                        .append("pincode", order.society_pincode)
                         .append("sellerId", sellerId)
                         .append("quantity", newQuantityGraph)
                     )
@@ -122,7 +139,7 @@ class DatabaseFactory {
                     if (newQuantityGraph == 1) {
                         orderSummaryGraph.insertOne(orderitemBarGraoh(
                             createdDate = orderDate,
-                            pincode = order.pincode,
+                            pincode = order.society_pincode,
                             sellerId = sellerId,
                             quantity = newQuantityGraph
                         ))
@@ -133,7 +150,7 @@ class DatabaseFactory {
                     // Fetch FCM tokens
                     val fcmTokens = adminAcessCollection.find(
                         and(
-                            adminAcess::pincode eq order.pincode,
+                            adminAcess::society_pincode eq order.society_pincode,
                             adminAcess::sellerId eq sellerId
                         )
                     ).toList()
@@ -185,12 +202,12 @@ class DatabaseFactory {
 
     suspend fun getAllOrder(status:String,mobileNumber:String?=null,pincode:String?=null,sellerId:String?=null): List<orderitem> {
 
-       return orderdetails.find(orderitem::orderStatus eq status.replace("\"", ""),if(sellerId?.isNotEmpty()==true)orderitem::sellerId eq sellerId.replace("\"", "") else null,if(pincode?.isNotEmpty()==true)orderitem::pincode eq pincode.replace("\"", "") else null).toList()
+       return orderdetails.find(orderitem::orderStatus eq status.replace("\"", ""),if(sellerId?.isNotEmpty()==true)orderitem::sellerId eq sellerId.replace("\"", "") else null,if(pincode?.isNotEmpty()==true)orderitem::society_pincode eq pincode.replace("\"", "") else null).toList()
 
     }
-    suspend fun getAllOrder1(status:String,mobileNumber:String?=null,pincode:String?=null,sellerId:String?=null): List<orderitem> {
+    suspend fun getAllOrder1(status:String,mobileNumber:String?=null,society_pincode:String?=null,sellerId:String?=null): List<orderitem> {
 
-        return orderdetails.find(orderitem::orderStatus eq status.replace("\"", ""),if(mobileNumber?.isNotEmpty()==true)orderitem::mobilenumber eq mobileNumber.replace("\"", "") else null,if(pincode?.isNotEmpty()==true)orderitem::pincode eq pincode.replace("\"", "") else null).toList()
+        return orderdetails.find(orderitem::orderStatus eq status.replace("\"", ""),if(mobileNumber?.isNotEmpty()==true)orderitem::mobilenumber eq mobileNumber.replace("\"", "") else null,if(society_pincode?.isNotEmpty()==true)orderitem::society_pincode eq society_pincode.replace("\"", "") else null).toList()
 
     }
 
@@ -226,18 +243,18 @@ class DatabaseFactory {
 
         return ls
     }
-    suspend fun getAllOrderPagination(skip: Int?, limit: Int?,pincode: String,sellerId:String): List<orderitem> =
-        orderdetails.find(orderitem::pincode eq pincode.replace("\"", ""),orderitem::sellerId eq sellerId.replace("\"", "")).skip(skip ?: 0).limit(limit ?: 0).toList()
+    suspend fun getAllOrderPagination(skip: Int?, limit: Int?,society_pincode: String,sellerId:String): List<orderitem> =
+        orderdetails.find(orderitem::society_pincode eq society_pincode.replace("\"", ""),orderitem::sellerId eq sellerId.replace("\"", "")).skip(skip ?: 0).limit(limit ?: 0).toList()
 
     suspend fun getAllUsers(): List<Users> = userCollection.find().toList()
 
 
     //get home products
-    suspend fun getSearchAllProducts(string: Regex, pincode: String?,sellerId:String?=null): List<HomeProducts> =
-        home_collections.find(HomeProducts::productName regex string,HomeProducts::pincode eq pincode,if(sellerId?.isNotEmpty()==true)HomeProducts::sellerId eq sellerId.replace("\"", "") else null).toList()
+    suspend fun getSearchAllProducts(string: Regex, society_pincode: String?,sellerId:String?=null): List<HomeProducts> =
+        home_collections.find(HomeProducts::productName regex string,HomeProducts::society_pincode eq society_pincode,if(sellerId?.isNotEmpty()==true)HomeProducts::sellerId eq sellerId.replace("\"", "") else null).toList()
 
-    suspend fun getHomeAllProducts(offset: Int? = 0, limit: Int? = 0, category: String? = "",pincode: String?,sellerId:String?=null): List<HomeProducts> =
-        home_collections.find(if(category!=null)HomeProducts::item_subcategory_name eq category.replace("\"", "") else null,HomeProducts::pincode eq pincode?.replace("\"", ""),if(sellerId?.isNotEmpty()==true)HomeProducts::sellerId eq sellerId.replace("\"", "") else null).skip(offset ?: 0).limit(limit ?: 0).toList()
+    suspend fun getHomeAllProducts(offset: Int? = 0, limit: Int? = 0, category: String? = "",society_pincode: String?,sellerId:String?=null): List<HomeProducts> =
+        home_collections.find(if(category!=null)HomeProducts::item_subcategory_name eq category.replace("\"", "") else null,HomeProducts::society_pincode eq society_pincode?.replace("\"", ""),if(sellerId?.isNotEmpty()==true)HomeProducts::sellerId eq sellerId.replace("\"", "") else null).skip(offset ?: 0).limit(limit ?: 0).toList()
 
     suspend fun GetPendingProductById(productId: String): HomeProducts? =
         home_collections.find(HomeProducts::productId eq productId).first()
@@ -252,18 +269,18 @@ class DatabaseFactory {
     suspend fun getBestProductBasedId(productId: String): HomeProducts? =
         home_collections.find(HomeProducts::productId eq productId).first()
 
-    suspend fun getAllCoupons(pincode: String?): List<AddCouponRequest>? =
-        allCoupons.find(AddCouponRequest::pincode eq pincode).toList()
+    suspend fun getAllCoupons(updateAddressItem: String?): List<AddCouponRequest>? =
+        allCoupons.find(AddCouponRequest::society_pincode eq updateAddressItem).toList()
 
 
-    suspend fun getRelatedSearch(pincode: String): List<HomeProducts> = home_collections.find(HomeProducts::pincode eq pincode).toList()
+    suspend fun getRelatedSearch(pincode: String): List<HomeProducts> = home_collections.find(HomeProducts::society_pincode eq pincode).toList()
 
 
     suspend fun getAllExclusiveCollection(): List<exclusiveOffers> =
         exclusiveCollection.find().toList()
 
     suspend fun getHomeAllProducts1(pincode:String,sellerId:String?=null): List<HomeProducts> =
-        home_collections.find(HomeProducts::pincode eq pincode,if(sellerId?.isNotEmpty()==true)HomeProducts::sellerId eq sellerId.replace("\"", "") else null).toList()
+        home_collections.find(HomeProducts::society_pincode eq pincode,if(sellerId?.isNotEmpty()==true)HomeProducts::sellerId eq sellerId.replace("\"", "") else null).toList()
 
     suspend fun getAlUsers(): List<Users> = userCollection.find().toList()
 
@@ -328,7 +345,7 @@ if(req.orderStatus=="Cancelled") {
             .append("createdDate", req.createdDate)
             .append("mobilenumber", req.mobilenumber)
             .append("paymentmode", req.paymentmode)
-            .append("pincode", req.pincode)
+            .append("pincode", req.society_pincode)
             .append("changeTime", req.changeTime)
             .append("orderStatus", req.orderStatus)
 
@@ -348,15 +365,15 @@ if(req.orderStatus=="Cancelled") {
 
 
     suspend fun getProductSubItems(productId: String, pincode: String?): List<HomeProducts?> =
-        home_collections.find(HomeProducts::item_subcategory_name eq productId,HomeProducts::pincode eq pincode).toList()
+        home_collections.find(HomeProducts::item_subcategory_name eq productId,HomeProducts::society_pincode eq pincode).toList()
 
     suspend fun getProductAllSubItems(productId: String, sellerId: String?): List<HomeProducts?> =
         home_collections.find(HomeProducts::item_subcategory_name eq productId,HomeProducts::sellerId eq sellerId).toList()
 
 
     suspend fun getUserByPhone(phone: String): Users? = userCollection.find(Users::phone eq phone.replace("\"", "")).first()
-    suspend fun checkNumberExist(phone: String): Boolean =
-        userCollection.find(Users::phone eq phone).toList().isNotEmpty()
+    suspend fun checkNumberExist(phone: String): List<Users> =
+        userCollection.find(Users::phone eq phone).toList()
 
     suspend fun deleteUserById(userId: String): Boolean =
         userCollection.deleteOne(Users::userId eq userId).wasAcknowledged()
@@ -435,7 +452,7 @@ if(req.orderStatus=="Cancelled") {
                 .append("productBestSelling", req.productBestSelling)
                 .append("quantityInstructionController", req.quantityInstructionController)
                 .append("productExclusiveSelling", req.productExclusiveSelling)
-                .append("pincode",req.pincode)
+                .append("pincode",req.society_pincode)
         )
 
         val result = home_collections.updateOne(Document("productId", req.productId), update)
@@ -452,7 +469,7 @@ if(req.orderStatus=="Cancelled") {
                     .append("imageUrl2", req.imageUrl2)
                     .append("bannercategory3", req.bannercategory3)
                     .append("imageUrl3", req.imageUrl3)
-                    .append("pincode", req.pincode)
+                    .append("pincode", req.society_pincode)
                     .append("changetime", req.changetime)
                     .append("subCategoryList", req.subCategoryList?.map { subCategory ->
                         Document()
@@ -512,7 +529,7 @@ if(req.orderStatus=="Cancelled") {
     }
 
     suspend fun getAllProductSubItems(productId: String, pincode: String?): List<HomeProducts?> =
-        home_collections.find(HomeProducts::item_subcategory_name eq productId,HomeProducts::pincode eq pincode).toList()
+        home_collections.find(HomeProducts::item_subcategory_name eq productId,HomeProducts::society_pincode eq pincode).toList()
 
 
 
