@@ -1,6 +1,6 @@
 package com.example.utils
 
-import com.example.src.modal.ApiResponse
+import com.example.features.admin.domain.modal.ApiResponse
 import com.example.src.modal.CommonClassResponse
 import com.example.src.modal.CommonListResponse
 import io.ktor.http.*
@@ -10,10 +10,10 @@ import io.ktor.util.pipeline.*
 
 
 suspend fun PipelineContext<Unit, ApplicationCall>.apiResponse(
-    statusCodeApi:HttpStatusCode,
+    statusCodeApi: HttpStatusCode,
     statusCode: Int = 400,
     message: String = "Something Went Wrong",
-    status:Boolean = false
+    status: Boolean = false
 ) {
 
 
@@ -24,12 +24,12 @@ suspend fun PipelineContext<Unit, ApplicationCall>.apiResponse(
 
 }
 
-suspend fun <T>PipelineContext<Unit, ApplicationCall>.apiListResponse(
-    statusCodeApi:HttpStatusCode,
+suspend fun <T> PipelineContext<Unit, ApplicationCall>.apiListResponse(
+    statusCodeApi: HttpStatusCode,
     statusCode: Int = 400,
     message: String = "Something Went Wrong",
-    status:Boolean = false,
-    ls:List<T>
+    status: Boolean = false,
+    ls: List<T>
 ) {
 
 
@@ -39,12 +39,13 @@ suspend fun <T>PipelineContext<Unit, ApplicationCall>.apiListResponse(
     )
 
 }
-suspend fun <T>PipelineContext<Unit, ApplicationCall>.apiClassResponse(
-    statusCodeApi:HttpStatusCode,
+
+suspend fun <T> PipelineContext<Unit, ApplicationCall>.apiClassResponse(
+    statusCodeApi: HttpStatusCode,
     statusCode: Int = 400,
     message: String = "Something Went Wrong",
-    status:Boolean = false,
-    response:T
+    status: Boolean = false,
+    response: T
 ) {
 
 

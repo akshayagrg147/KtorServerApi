@@ -1,6 +1,7 @@
 package com.example.features.customer.domain.route
 
 
+import com.example.features.admin.domain.modal.ApiResponse
 import com.example.features.admin.domain.route.sendEmail
 import com.example.features.customer.domain.modal.Users
 import com.example.generateToken
@@ -11,7 +12,6 @@ import com.example.utils.apiListResponse
 import com.example.utils.apiResponse
 import io.ktor.http.*
 import io.ktor.server.application.*
-import io.ktor.server.auth.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
@@ -24,7 +24,7 @@ fun Route.userRoute(
     db: DatabaseFactory
 ) {
 
-    route("/Customers") {
+    route("/customers") {
         post("/updateColumnName") {
             db.updateSocietyPincode()
             call.respond(
@@ -107,14 +107,13 @@ fun Route.userRoute(
 //                    val deliver = db.getAllOrder("Delivered", requestBody.phone, requestBody.pincode)
 //                    val cancel = db.getAllOrder("Cancelled", requestBody.phone, requestBody.pincode)
                     user?.cancel = user?.cancel.toString()
-                    user?.deliver =  user?.deliver.toString()
+                    user?.deliver = user?.deliver.toString()
                     user?.order = user?.order.toString()
 
                     call.respond(status = HttpStatusCode.OK, UserProfileResponse(user, 200, "fetched successfully"))
                 } else {
                     call.respond(
-                        status = HttpStatusCode.OK,
-                        UserProfileResponse(null, 400, "mobile number incorrect")
+                        status = HttpStatusCode.OK, UserProfileResponse(null, 400, "mobile number incorrect")
                     )
 
                 }
@@ -128,7 +127,7 @@ fun Route.userRoute(
 
             }
         }
-        post("/AllOrders") {
+        post("/allOrders") {
             try {
                 val request = call.receive<String>().replace("\"status\":", "").replace("{", "").replace("}", "")
                 val status = request.split("@")[0]
@@ -137,11 +136,7 @@ fun Route.userRoute(
                 print("status_mobile_pincode ${status} $mobileNumber $pincode")
                 val orders = db.getAllOrder1(status, mobileNumber, pincode.trim())
                 apiListResponse(
-                    HttpStatusCode.OK,
-                    statusCode = 200,
-                    ls = orders,
-                    message = "fetched successfully",
-                    status = true
+                    HttpStatusCode.OK, statusCode = 200, ls = orders, message = "fetched successfully", status = true
                 )
 
             } catch (e: Exception) {
@@ -155,33 +150,29 @@ fun Route.userRoute(
             }
         }
 
-            get("/ExclusiveOffers") {
-                try {
-                    val pincode = call.parameters["society_pincode"]
-                    val product = db.getHomeAllProducts1(pincode ?: "")
-                    val exclusive: List<HomeProducts> = product.filter { it.productExclusiveSelling }
-                    apiListResponse(
-                        HttpStatusCode.OK,
-                        statusCode = 200,
-                        ls = exclusive,
-                        message = "fetched successfully",
-                        status = true
-                    )
+        get("/exclusiveOffers") {
+            try {
+                val pincode = call.parameters["society_pincode"]
+                val product = db.getHomeAllProducts1(pincode ?: "")
+                val exclusive: List<HomeProducts> = product.filter { it.productExclusiveSelling }
+                apiListResponse(
+                    HttpStatusCode.OK, statusCode = 200, ls = exclusive, message = "fetched successfully", status = true
+                )
 
 
-                } catch (e: Exception) {
-                    apiResponse(
-                        statusCode = 400,
-                        message = "${e.message}",
-                        status = false,
-                        statusCodeApi = HttpStatusCode.BadRequest,
-                    )
-                }
+            } catch (e: Exception) {
+                apiResponse(
+                    statusCode = 400,
+                    message = "${e.message}",
+                    status = false,
+                    statusCodeApi = HttpStatusCode.BadRequest,
+                )
             }
+        }
         get("/allSocieties") {
             try {
                 val pincode = call.parameters["society_pincode"]
-                val allSocities: List<SocietyList> = listOf(SocietyList("sector 95a,Roselia",1))
+                val allSocities: List<SocietyList> = listOf(SocietyList("sector 95a,Roselia", 1))
                 apiListResponse(
                     HttpStatusCode.OK,
                     statusCode = 200,
@@ -200,262 +191,248 @@ fun Route.userRoute(
                 )
             }
         }
-            get("/CancelOrder"){
+        get("/cancelOrder") {
 
-            }
-            post("/OrderStatus") {
+        }
+        post("/orderStatus") {
 
-                val requestBody = call.receive<orderitem>()
-                requestBody.changeTime = System.currentTimeMillis().toDouble()
-                if (requestBody.orderStatus?.isNotEmpty() == true) {
+            val requestBody = call.receive<OrderItem>()
+            requestBody.changeTime = System.currentTimeMillis().toDouble()
+            if (requestBody.orderStatus?.isNotEmpty() == true) {
 
-                    if (db.setOrderStatus(requestBody) {
-                            if (it.isNotEmpty()) {
-                                val result = sendEmail(
-                                    to = it,
-                                    subject = "Order Status: ${requestBody.orderStatus}",
-                                    body = "Dear customer,\n\nYour order status is: ${requestBody.orderStatus}.",
+                if (db.setOrderStatus(requestBody) {
+                        if (it.isNotEmpty()) {
+                            val result = sendEmail(
+                                to = it,
+                                subject = "Order Status: ${requestBody.orderStatus}",
+                                body = "Dear customer,\n\nYour order status is: ${requestBody.orderStatus}.",
 
-                                    smtpHost = "smtp.gmail.com",
-                                    smtpPort = 587, // or your SMTP port
-                                    smtpUsername = "akshaygarg147@gmail.com",
-                                    smtpPassword = "crrm ddex jwxo fmco"
-                                )
+                                smtpHost = "smtp.gmail.com",
+                                smtpPort = 587, // or your SMTP port
+                                smtpUsername = "akshaygarg147@gmail.com",
+                                smtpPassword = "crrm ddex jwxo fmco"
+                            )
 
-                                if (result) {
-                                    print("Email sent successfully.")
-                                } else {
-                                    print("Failed to send email.")
-                                }
-
+                            if (result) {
+                                print("Email sent successfully.")
+                            } else {
+                                print("Failed to send email.")
                             }
-                        } > 0) {
-                        call.respond(
-                            status = HttpStatusCode.OK,
-                            ApiResponse(status = true, statusCode = 200, message = "Updated status Successfully")
-                        )
 
-
-                    } else {
-                        call.respond(
-                            status = HttpStatusCode.BadRequest,
-                            ApiResponse(status = false, statusCode = 200, message = "Can not updated")
-                        )
-                    }
-                } else {
+                        }
+                    } > 0) {
                     call.respond(
                         status = HttpStatusCode.OK,
-                        ApiResponse(status = false, statusCode = 200, message = "Incorrect status")
+                        ApiResponse(status = true, statusCode = 200, message = "Updated status Successfully")
+                    )
+
+
+                } else {
+                    call.respond(
+                        status = HttpStatusCode.BadRequest,
+                        ApiResponse(status = false, statusCode = 200, message = "Can not updated")
                     )
                 }
-            }
-
-            //admin
-            get("/getProductCategory") {
-                try {
-                    val pincode = call.parameters["society_pincode"]
-                    val product = db.getProductCategory(pincode.toString())
-                    apiListResponse(
-                        HttpStatusCode.OK,
-                        statusCode = 200,
-                        ls = product,
-                        message = "fetched successfully",
-                        status = true
-                    )
-
-
-                } catch (e: Exception) {
-                    apiResponse(
-                        statusCode = 400,
-                        message = "${e.message}",
-                        status = false,
-                        statusCodeApi = HttpStatusCode.BadRequest,
-                    )
-                }
-            }
-            get("/allCoupons") {
-                try {
-                    val pincode = call.parameters["society_pincode"]
-                    val couponResponse = db.getAllCoupons(pincode)
-                    val currentDateString = SimpleDateFormat("yyyy-MM-dd").format(Date())
-                    // Compare the two date strings
-                    val dateFormat = SimpleDateFormat("yyyy-MM-dd")
-                    val filterCoupons = couponResponse?.filter { coupon ->
-                        val inputDate = dateFormat.parse(coupon.expireDate)
-                        inputDate > dateFormat.parse(currentDateString)
-                    }
-                    apiListResponse(
-                        HttpStatusCode.OK,
-                        statusCode = 200,
-                        ls = filterCoupons ?: emptyList(),
-                        message = "fetched successfully",
-                        status = true
-                    )
-
-                } catch (e: Exception) {
-                    apiResponse(
-                        statusCode = 400,
-                        message = "${e.message}",
-                        status = false,
-                        statusCodeApi = HttpStatusCode.BadRequest,
-                    )
-                }
-            }
-
-            //----
-            get("/getBannerCategory") {
-                try {
-                    val pincode = call.parameters["society_pincode"]
-                    val product = db.getBannerCategory(pincode.toString())
-                    if (product.isNotEmpty()) apiListResponse(
-                        HttpStatusCode.OK,
-                        statusCode = 200,
-                        ls = product,
-                        message = "fetched successfully",
-                        status = true
-                    )
-                    else {
-                        apiListResponse(
-                            HttpStatusCode.OK,
-                            statusCode = 200,
-                            ls = product,
-                            message = "Please assign category",
-                            status = false
-                        )
-                    }
-
-                } catch (e: Exception) {
-                    apiResponse(
-                        statusCode = 400,
-                        message = "${e.message}",
-                        status = false,
-                        statusCodeApi = HttpStatusCode.BadRequest,
-                    )
-
-
-                }
-            }
-            post("/ItemsCollections") {
-                try {
-                    val requestBody = call.receive<SearchByProductId>()
-                    if (requestBody.ProductId != null) {
-                        val listItems = db.getProductSubItems(requestBody.ProductId, requestBody.society_pincode)
-                        apiListResponse(
-                            HttpStatusCode.OK,
-                            statusCode = 200,
-                            ls = listItems,
-                            message = "fetched successfully",
-                            status = true
-                        )
-                    }
-                } catch (e: Exception) {
-                    apiResponse(
-                        statusCode = 400,
-                        message = "${e.message}",
-                        status = false,
-                        statusCodeApi = HttpStatusCode.BadRequest,
-                    )
-
-                }
-            }
-
-
-            post("/ItemsCollections") {
-                try {
-                    val requestBody = call.receive<SearchByProductId>()
-                    if (requestBody.ProductId != null) {
-                        val listItems = db.getProductSubItems(requestBody.ProductId, requestBody.society_pincode)
-                        apiListResponse(
-                            HttpStatusCode.OK,
-                            statusCode = 200,
-                            ls = listItems,
-                            message = "fetched successfully",
-                            status = true
-                        )
-                    }
-                } catch (e: Exception) {
-                    apiResponse(
-                        statusCode = 400,
-                        message = "${e.message}",
-                        status = false,
-                        statusCodeApi = HttpStatusCode.BadRequest,
-                    )
-
-                }
-            }
-
-            get("/getProductCategory") {
-                try {
-                    val pincode = call.parameters["society_pincode"]
-                    val product = db.getProductCategory(pincode.toString())
-                    if (product.isNotEmpty()) apiListResponse(
-                        HttpStatusCode.OK,
-                        statusCode = 200,
-                        ls = product,
-                        message = "fetched successfully",
-                        status = true
-                    )
-                    else {
-                        apiListResponse(
-                            HttpStatusCode.OK,
-                            statusCode = 200,
-                            ls = product,
-                            message = "Please assign category",
-                            status = false
-                        )
-
-                    }
-
-                } catch (e: Exception) {
-                    apiResponse(
-                        statusCode = 400,
-                        message = "${e.message}",
-                        status = false,
-                        statusCodeApi = HttpStatusCode.BadRequest,
-                    )
-
-                }
-            }
-            post("/getAdminDetails") {
-                val admins: List<adminAcess> = db.getAllAdmins()
-
-                val filterList: List<adminAvailable> = admins.map { adminAcess ->
-                    adminAvailable(
-                        society_pincode = adminAcess.society_pincode,
-                       price =  adminAcess.price,
-                       city =  adminAcess.city,
-                        sellerId = adminAcess.sellerId?:"",
-                        deliveryContactNumber = adminAcess.deliveryContactNumber ?: "",
-                        lat = adminAcess.lat,
-                        lng=adminAcess.lng,
-                        categorySellerData =SellerCategoryData(
-
-                            sellerCatergoryList =     db.getAllProductCategory(adminAcess.sellerId?:"").map { CategoryImage(it.category,it .imageUrl.toString(),it.subCategoryList.map { it.name })},
-
-                        )
-
-                    )
-                }
-
+            } else {
                 call.respond(
                     status = HttpStatusCode.OK,
-                    CommonListResponse(filterList.toList(), 200, "fetched successfully")
+                    ApiResponse(status = false, statusCode = 200, message = "Incorrect status")
+                )
+            }
+        }
+
+        //admin
+        get("/getProductCategory") {
+            try {
+                val pincode = call.parameters["society_pincode"]
+                val product = db.getProductCategory(pincode.toString())
+                apiListResponse(
+                    HttpStatusCode.OK, statusCode = 200, ls = product, message = "fetched successfully", status = true
+                )
+
+
+            } catch (e: Exception) {
+                apiResponse(
+                    statusCode = 400,
+                    message = "${e.message}",
+                    status = false,
+                    statusCodeApi = HttpStatusCode.BadRequest,
+                )
+            }
+        }
+        get("/allCoupons") {
+            try {
+                val pincode = call.parameters["society_pincode"]
+                val couponResponse = db.getAllCoupons(pincode)
+                val currentDateString = SimpleDateFormat("yyyy-MM-dd").format(Date())
+                // Compare the two date strings
+                val dateFormat = SimpleDateFormat("yyyy-MM-dd")
+                val filterCoupons = couponResponse?.filter { coupon ->
+                    val inputDate = dateFormat.parse(coupon.expireDate)
+                    inputDate > dateFormat.parse(currentDateString)
+                }
+                apiListResponse(
+                    HttpStatusCode.OK,
+                    statusCode = 200,
+                    ls = filterCoupons ?: emptyList(),
+                    message = "fetched successfully",
+                    status = true
+                )
+
+            } catch (e: Exception) {
+                apiResponse(
+                    statusCode = 400,
+                    message = "${e.message}",
+                    status = false,
+                    statusCodeApi = HttpStatusCode.BadRequest,
+                )
+            }
+        }
+
+        //----
+        get("/getBannerCategory") {
+            try {
+                val pincode = call.parameters["society_pincode"]
+                val product = db.getBannerCategory(pincode.toString())
+                if (product.isNotEmpty()) apiListResponse(
+                    HttpStatusCode.OK, statusCode = 200, ls = product, message = "fetched successfully", status = true
+                )
+                else {
+                    apiListResponse(
+                        HttpStatusCode.OK,
+                        statusCode = 200,
+                        ls = product,
+                        message = "Please assign category",
+                        status = false
+                    )
+                }
+
+            } catch (e: Exception) {
+                apiResponse(
+                    statusCode = 400,
+                    message = "${e.message}",
+                    status = false,
+                    statusCodeApi = HttpStatusCode.BadRequest,
+                )
+
+
+            }
+        }
+        post("/itemsCollections") {
+            try {
+                val requestBody = call.receive<SearchByProductId>()
+                if (requestBody.ProductId != null) {
+                    val listItems = db.getProductSubItems(requestBody.ProductId, requestBody.society_pincode)
+                    apiListResponse(
+                        HttpStatusCode.OK,
+                        statusCode = 200,
+                        ls = listItems,
+                        message = "fetched successfully",
+                        status = true
+                    )
+                }
+            } catch (e: Exception) {
+                apiResponse(
+                    statusCode = 400,
+                    message = "${e.message}",
+                    status = false,
+                    statusCodeApi = HttpStatusCode.BadRequest,
+                )
+
+            }
+        }
+
+
+        get("/getProductCategory") {
+            try {
+                val pincode = call.parameters["society_pincode"]
+                val product = db.getProductCategory(pincode.toString())
+                if (product.isNotEmpty()) apiListResponse(
+                    HttpStatusCode.OK, statusCode = 200, ls = product, message = "fetched successfully", status = true
+                )
+                else {
+                    apiListResponse(
+                        HttpStatusCode.OK,
+                        statusCode = 200,
+                        ls = product,
+                        message = "Please assign category",
+                        status = false
+                    )
+
+                }
+
+            } catch (e: Exception) {
+                apiResponse(
+                    statusCode = 400,
+                    message = "${e.message}",
+                    status = false,
+                    statusCodeApi = HttpStatusCode.BadRequest,
+                )
+
+            }
+        }
+        post("/getAdminDetails") {
+            val admins: List<adminAcess> = db.getAllAdmins()
+
+            val filterList: List<adminAvailable> = admins.map { adminAcess ->
+                adminAvailable(
+                    society_pincode = adminAcess.society_pincode,
+                    price = adminAcess.price,
+                    city = adminAcess.city,
+                    sellerId = adminAcess.sellerId ?: "",
+                    deliveryContactNumber = adminAcess.deliveryContactNumber ?: "",
+                    lat = adminAcess.lat,
+                    lng = adminAcess.lng,
+                    categorySellerData = SellerCategoryData(
+
+                        sellerCatergoryList = db.getAllProductCategory(adminAcess.sellerId ?: "").map {
+                            CategoryImage(it.category, it.imageUrl.toString(), it.subCategoryList.map { it.name })
+                        },
+
+                        )
+
                 )
             }
 
+            call.respond(
+                status = HttpStatusCode.OK, CommonListResponse(filterList.toList(), 200, "fetched successfully")
+            )
+        }
 
-            get("/HomeAllProducts") {
-                try {
 
-                    val skip = call.parameters["skip"]
-                    val limit = call.parameters["limit"]
-                    val category = call.parameters["category"]
-                    val product = db.getHomeAllProducts(
-                        Integer.parseInt(skip),
-                        Integer.parseInt(limit),
-                        category?.split("__")?.get(0),
-                        society_pincode = category?.split("__")?.get(1)
-                    )
+        get("/homeAllProducts") {
+            try {
+
+                val skip = call.parameters["skip"]
+                val limit = call.parameters["limit"]
+                val category = call.parameters["category"]
+                val product = db.getHomeAllProducts(
+                    Integer.parseInt(skip),
+                    Integer.parseInt(limit),
+                    category?.split("__")?.get(0),
+                    society_pincode = category?.split("__")?.get(1)
+                )
+                apiListResponse(
+                    HttpStatusCode.OK, statusCode = 200, ls = product, message = "fetched successfully", status = true
+                )
+
+            } catch (e: Exception) {
+                apiResponse(
+                    statusCode = 400,
+                    message = "${e.message}",
+                    status = false,
+                    statusCodeApi = HttpStatusCode.BadRequest,
+                )
+
+            }
+        }
+        get("/searchAllProducts") {
+            try {
+                val value = call.parameters["query"]
+                val pincode = call.parameters["society_pincode"]
+                if (value?.isNotEmpty() == true) {
+                    val regex = Regex("${value}.*", RegexOption.IGNORE_CASE)
+                    val product = db.getSearchAllProducts(regex, pincode)
                     apiListResponse(
                         HttpStatusCode.OK,
                         statusCode = 200,
@@ -463,344 +440,312 @@ fun Route.userRoute(
                         message = "fetched successfully",
                         status = true
                     )
-
-                } catch (e: Exception) {
-                    apiResponse(
-                        statusCode = 400,
-                        message = "${e.message}",
-                        status = false,
-                        statusCodeApi = HttpStatusCode.BadRequest,
-                    )
-
                 }
+
+            } catch (e: Exception) {
+                apiResponse(
+                    statusCode = 400,
+                    message = "${e.message}",
+                    status = false,
+                    statusCodeApi = HttpStatusCode.BadRequest,
+                )
+
             }
-            get("/SearchAllProducts") {
-                try {
-                    val value = call.parameters["query"]
-                    val pincode = call.parameters["society_pincode"]
-                    if (value?.isNotEmpty() == true) {
-                        val regex = Regex("${value}.*", RegexOption.IGNORE_CASE)
-                        val product = db.getSearchAllProducts(regex, pincode)
-                        apiListResponse(
-                            HttpStatusCode.OK,
-                            statusCode = 200,
-                            ls = product,
-                            message = "fetched successfully",
-                            status = true
-                        )
+        }
+        get("/bestSelling") {
+            try {
+                val pincode = call.parameters["society_pincode"]
+                val product = db.getHomeAllProducts1(pincode.toString())
+                val best = product.filter { it.productBestSelling }
+                apiListResponse(
+                    HttpStatusCode.OK, statusCode = 200, ls = best, message = "fetched successfully", status = true
+                )
+
+            } catch (e: Exception) {
+                apiResponse(
+                    statusCode = 400,
+                    message = "${e.message}",
+                    status = false,
+                    statusCodeApi = HttpStatusCode.BadRequest,
+                )
+
+            }
+        }
+
+        //calling product id
+        post("/getPendingProductById") {
+            try {
+                val requestBody = call.receive<SearchByProductId>()
+                val product = db.GetPendingProductById(requestBody.ProductId!!)
+                if (product?.productId != null) call.respond(
+                    status = HttpStatusCode.OK, ProductResponseById(product, 200, "fetched successfully")
+                )
+                else call.respond(
+                    status = HttpStatusCode.OK, ProductResponseById(null, 400, "Items not available")
+                )
+
+            } catch (e: Exception) {
+                apiResponse(
+                    statusCode = 400,
+                    message = "${e.message}",
+                    status = false,
+                    statusCodeApi = HttpStatusCode.BadRequest,
+                )
+
+            }
+        }
+        post("/createOrderId") {
+            val requestBodyItem = call.receive<OrderItem>()
+            try {
+                var allitemcalled: Boolean? = false
+                val lsInput: ArrayList<Orders> = ArrayList()
+                val cal = Calendar.getInstance()
+
+                val dateFormat = SimpleDateFormat("dd/MM/yyyy")
+                val timeFormat = SimpleDateFormat("hh:mm:ss")
+                // Format the date from the Calendar instance
+                val formattedDate = dateFormat.format(cal.time)
+                val formattedTime = timeFormat.format(cal.time)
+                requestBodyItem.createdDate = "$formattedDate $formattedTime"
+
+                requestBodyItem.orderStatus = "Ordered"
+
+                for (requestBody in requestBodyItem.orderList) {
+                    if (requestBody.productprice != null && requestBody.productId != null && requestBody.productName != null && requestBody.quantity != null) {
+                        lsInput.add(requestBody)
+                        //  if(requestBodyItem.list.size-1==totalitem)
+                        allitemcalled = true
+
                     }
-
-                } catch (e: Exception) {
-                    apiResponse(
-                        statusCode = 400,
-                        message = "${e.message}",
-                        status = false,
-                        statusCodeApi = HttpStatusCode.BadRequest,
-                    )
-
                 }
-            }
-            get("/BestSelling") {
-                try {
-                    val pincode = call.parameters["society_pincode"]
-                    val product = db.getHomeAllProducts1(pincode.toString())
-                    val best = product.filter { it.productBestSelling }
-                    apiListResponse(
-                        HttpStatusCode.OK, statusCode = 200, ls = best, message = "fetched successfully", status = true
-                    )
+                if (allitemcalled == true) {
+                    val order = db.orderdetails(requestBodyItem)
 
-                } catch (e: Exception) {
-                    apiResponse(
-                        statusCode = 400,
-                        message = "${e.message}",
-                        status = false,
-                        statusCodeApi = HttpStatusCode.BadRequest,
-                    )
-
-                }
-            }
-
-            //calling product id
-            post("/GetPendingProductById") {
-                try {
-                    val requestBody = call.receive<SearchByProductId>()
-                    val product = db.GetPendingProductById(requestBody.ProductId!!)
-                    if (product?.productId != null) call.respond(
-                        status = HttpStatusCode.OK, ProductResponseById(product, 200, "fetched successfully")
-                    )
-                    else call.respond(
-                        status = HttpStatusCode.OK, ProductResponseById(null, 400, "Items not available")
-                    )
-
-                } catch (e: Exception) {
-                    apiResponse(
-                        statusCode = 400,
-                        message = "${e.message}",
-                        status = false,
-                        statusCodeApi = HttpStatusCode.BadRequest,
-                    )
-
-                }
-            }
-            post("/CreateOrderId") {
-                val requestBodyItem = call.receive<orderitem>()
-                try {
-                    var allitemcalled: Boolean? = false
-                    val lsInput: ArrayList<Orders> = ArrayList()
-                    val cal = Calendar.getInstance()
-
-                    val dateFormat = SimpleDateFormat("dd/MM/yyyy")
-                    val timeFormat = SimpleDateFormat("hh:mm:ss")
-                    // Format the date from the Calendar instance
-                    val formattedDate = dateFormat.format(cal.time)
-                    val formattedTime = timeFormat.format(cal.time)
-                    requestBodyItem.createdDate = "$formattedDate $formattedTime"
-
-                    requestBodyItem.orderStatus = "Ordered"
-
-                    for (requestBody in requestBodyItem.orderList) {
-                        if (requestBody.productprice != null && requestBody.productId != null && requestBody.productName != null && requestBody.quantity != null) {
-                            lsInput.add(requestBody)
-                            //  if(requestBodyItem.list.size-1==totalitem)
-                            allitemcalled = true
-
-                        }
-                    }
-                    if (allitemcalled == true) {
-                        val order = db.orderdetails(requestBodyItem)
-
-                        call.respond(
-                            HttpStatusCode.OK,
-                            BookedOrders(
-                                ProductResponse = order,
-                                statusCode = 200,
-                                message = "Order Placed successfully"
-                            )
+                    call.respond(
+                        HttpStatusCode.OK, BookedOrders(
+                            ProductResponse = order, statusCode = 200, message = "Order Placed successfully"
                         )
-                    } else {
-                        call.respond(
-                            Message(
-                                "Missing Item", false, 401
-                            )
-                        )
-                    }
-                } catch (e: Exception) {
-                    apiResponse(
-                        statusCode = 401,
-                        message = "${e.message}",
-                        status = false,
-                        statusCodeApi = HttpStatusCode.BadRequest,
                     )
-
+                } else {
+                    call.respond(
+                        Message(
+                            "Missing Item", false, 401
+                        )
+                    )
                 }
+            } catch (e: Exception) {
+                apiResponse(
+                    statusCode = 401,
+                    message = "${e.message}",
+                    status = false,
+                    statusCodeApi = HttpStatusCode.BadRequest,
+                )
+
             }
-            get("/registerCustomertoken") {
+        }
+        get("/registerCustomertoken") {
 
-                try {
-                    val token = call.parameters["token"]
-                    val mobile = call.parameters["mobile"]
-                    print("registerCustomertoken $token $mobile")
-                    val status = db.registerCustomertoken(token.toString(), mobile.toString())
+            try {
+                val token = call.parameters["token"]
+                val mobile = call.parameters["mobile"]
+                print("registerCustomertoken $token $mobile")
+                val status = db.registerCustomertoken(token.toString(), mobile.toString())
 
-                    if (status > 0) {
-                        call.respond(
-                            status = HttpStatusCode.OK,
-                            ApiResponse(status = true, statusCode = 200, message = "Updated token Successfully")
-                        )
-                    } else {
-                        call.respond(
-                            status = HttpStatusCode.BadRequest,
-                            ApiResponse(status = false, statusCode = 400, message = "please check request body")
-                        )
-                    }
-
-
-                } catch (e: Exception) {
-                    apiResponse(
-                        statusCode = 400,
-                        message = "${e.message}",
-                        status = false,
-                        statusCodeApi = HttpStatusCode.BadRequest,
+                if (status > 0) {
+                    call.respond(
+                        status = HttpStatusCode.OK,
+                        ApiResponse(status = true, statusCode = 200, message = "Updated token Successfully")
                     )
-
+                } else {
+                    call.respond(
+                        status = HttpStatusCode.BadRequest,
+                        ApiResponse(status = false, statusCode = 400, message = "please check request body")
+                    )
                 }
 
 
+            } catch (e: Exception) {
+                apiResponse(
+                    statusCode = 400,
+                    message = "${e.message}",
+                    status = false,
+                    statusCodeApi = HttpStatusCode.BadRequest,
+                )
+
             }
-            post("/AvailibilityCheck") {
-                try {
-                    val pincode = call.receive<String>()
-                    if ((pincode.replace("\"", "") == "136027") || (pincode.replace(
-                            "\"", ""
-                        ) == "122018") || (pincode.replace("\"", "") == "122505")
-                    ) {
-                        apiResponse(
-                            HttpStatusCode.OK, statusCode = 200, message = "fetched successfully", status = true
-                        )
-                    } else {
-                        apiResponse(
-                            HttpStatusCode.OK, statusCode = 201, message = "fetched successfully", status = true
-                        )
-                    }
 
 
-                } catch (e: Exception) {
+        }
+        post("/availibilityCheck") {
+            try {
+                val pincode = call.receive<String>()
+                if ((pincode.replace("\"", "") == "136027") || (pincode.replace(
+                        "\"", ""
+                    ) == "122018") || (pincode.replace("\"", "") == "122505")
+                ) {
                     apiResponse(
-                        statusCode = 400,
-                        message = "${e.message}",
-                        status = false,
-                        statusCodeApi = HttpStatusCode.BadRequest,
+                        HttpStatusCode.OK, statusCode = 200, message = "fetched successfully", status = true
                     )
-
-                }
-            }
-
-            post("/GetBestProductById") {
-                try {
-                    val requestBody = call.receive<SearchByProductId>()
-                    val product = db.getBestProductBasedId(requestBody.ProductId!!)
-                    if (product?.productId != null) call.respond(
-                        status = HttpStatusCode.OK, ProductResponseById(product, 200, "fetched successfully")
-                    )
-                    else call.respond(
-                        status = HttpStatusCode.OK, ProductResponseById(null, 400, "Items not available")
-                    )
-
-                } catch (e: Exception) {
+                } else {
                     apiResponse(
-                        statusCode = 400,
-                        message = "${e.message}",
-                        status = false,
-                        statusCodeApi = HttpStatusCode.BadRequest,
+                        HttpStatusCode.OK, statusCode = 201, message = "fetched successfully", status = true
                     )
-
                 }
-            }
-            post("/GetRelatedSearch") {
-                try {
-                    val requestBody = call.receive<RelatedSerachByPriceAndCategory>()
-                    val product = db.getRelatedSearch(requestBody.society_pincode!!).take(4)
-                    apiListResponse(
-                        HttpStatusCode.OK,
-                        statusCode = 200,
-                        ls = product,
-                        message = "fetched successfully",
-                        status = true
-                    )
-                } catch (e: Exception) {
-                    apiResponse(
-                        statusCode = 400,
-                        message = "${e.message}",
-                        status = false,
-                        statusCodeApi = HttpStatusCode.BadRequest,
-                    )
 
+
+            } catch (e: Exception) {
+                apiResponse(
+                    statusCode = 400,
+                    message = "${e.message}",
+                    status = false,
+                    statusCodeApi = HttpStatusCode.BadRequest,
+                )
+
+            }
+        }
+
+        post("/getBestProductById") {
+            try {
+                val requestBody = call.receive<SearchByProductId>()
+                val product = db.getBestProductBasedId(requestBody.ProductId!!)
+                if (product?.productId != null) call.respond(
+                    status = HttpStatusCode.OK, ProductResponseById(product, 200, "fetched successfully")
+                )
+                else call.respond(
+                    status = HttpStatusCode.OK, ProductResponseById(null, 400, "Items not available")
+                )
+
+            } catch (e: Exception) {
+                apiResponse(
+                    statusCode = 400,
+                    message = "${e.message}",
+                    status = false,
+                    statusCodeApi = HttpStatusCode.BadRequest,
+                )
+
+            }
+        }
+        post("/getRelatedSearch") {
+            try {
+                val requestBody = call.receive<RelatedSerachByPriceAndCategory>()
+                val product = db.getRelatedSearch(requestBody.society_pincode!!).take(4)
+                apiListResponse(
+                    HttpStatusCode.OK, statusCode = 200, ls = product, message = "fetched successfully", status = true
+                )
+            } catch (e: Exception) {
+                apiResponse(
+                    statusCode = 400,
+                    message = "${e.message}",
+                    status = false,
+                    statusCodeApi = HttpStatusCode.BadRequest,
+                )
+
+            }
+        }
+        post("/getExclusiveProductById") {
+            try {
+                val requestBody = call.receive<SearchByProductId>()
+                val product = db.getExclusiveProductBasedId(requestBody.ProductId!!)
+                if (product?.productId != null) call.respond(
+                    status = HttpStatusCode.OK, ProductResponseById(product, 200, "fetched successfully")
+                )
+                else call.respond(
+                    status = HttpStatusCode.OK, ProductResponseById(null, 400, "Items not available")
+                )
+
+            } catch (e: Exception) {
+                apiResponse(
+                    statusCode = 400,
+                    message = "${e.message}",
+                    status = false,
+                    statusCodeApi = HttpStatusCode.BadRequest,
+                )
+
+            }
+        }
+        get("/homeCategoryWiseProducts") {
+            try {
+                val pincode = call.parameters["society_pincode"]
+                val allCategory = db.getProductCategory(pincode.toString()).filter {
+                    it.category != "Best Selling"
+                }.filter { it.category != "exclusive" }.filter {
+                    it.category != "best"
                 }
-            }
-            post("/GetExclusiveProductById") {
-                try {
-                    val requestBody = call.receive<SearchByProductId>()
-                    val product = db.getExclusiveProductBasedId(requestBody.ProductId!!)
-                    if (product?.productId != null) call.respond(
-                        status = HttpStatusCode.OK, ProductResponseById(product, 200, "fetched successfully")
-                    )
-                    else call.respond(
-                        status = HttpStatusCode.OK, ProductResponseById(null, 400, "Items not available")
-                    )
-
-                } catch (e: Exception) {
-                    apiResponse(
-                        statusCode = 400,
-                        message = "${e.message}",
-                        status = false,
-                        statusCodeApi = HttpStatusCode.BadRequest,
-                    )
-
-                }
-            }
-            get("/HomeCategoryWiseProducts") {
-                try {
-                    val pincode = call.parameters["society_pincode"]
-                    val allCategory = db.getProductCategory(pincode.toString()).filter {
-                        it.category != "Best Selling"
-                    }.filter { it.category != "exclusive" }.filter {
-                        it.category != "best"
-                    }
-                    val product = db.getHomeAllProducts1(pincode.toString())
-                    val cat1: List<HomeProducts> = product.filter { mainCategory ->
-                        allCategory.lastOrNull()?.subCategoryList?.getOrNull(0)?.name == mainCategory.item_subcategory_name.toString()
-                    }.take(4)
-                    val cat2: List<HomeProducts> = product.filter { mainCategory ->
-                        allCategory.lastOrNull()?.subCategoryList?.getOrNull(1)?.name == mainCategory.item_subcategory_name.toString()
-                    }.take(4)
-                    val cat3: List<HomeProducts> = product.filter { mainCategory ->
-                        allCategory.lastOrNull()?.subCategoryList?.getOrNull(2)?.name == mainCategory.item_subcategory_name.toString()
-                    }.take(4)
-                    val cat4: List<HomeProducts> = product.filter { mainCategory ->
-                        allCategory.lastOrNull()?.subCategoryList?.getOrNull(3)?.name == mainCategory.item_subcategory_name.toString()
-                    }.take(4)
-                    val ls = mutableListOf<DashboardHomeProductsModal>()
-                    allCategory.lastOrNull()?.subCategoryList?.size?.let {
-                        ls.add(
-                            DashboardHomeProductsModal(
-                                cat1,
-                                allCategory.lastOrNull()?.subCategoryList?.getOrNull(it - 1)?.name ?: "null",
-                                "${allCategory.lastOrNull()?.subCategoryList?.getOrNull(0)?.name}"
-                            )
+                val product = db.getHomeAllProducts1(pincode.toString())
+                val cat1: List<HomeProducts> = product.filter { mainCategory ->
+                    allCategory.lastOrNull()?.subCategoryList?.getOrNull(0)?.name == mainCategory.item_subcategory_name.toString()
+                }.take(4)
+                val cat2: List<HomeProducts> = product.filter { mainCategory ->
+                    allCategory.lastOrNull()?.subCategoryList?.getOrNull(1)?.name == mainCategory.item_subcategory_name.toString()
+                }.take(4)
+                val cat3: List<HomeProducts> = product.filter { mainCategory ->
+                    allCategory.lastOrNull()?.subCategoryList?.getOrNull(2)?.name == mainCategory.item_subcategory_name.toString()
+                }.take(4)
+                val cat4: List<HomeProducts> = product.filter { mainCategory ->
+                    allCategory.lastOrNull()?.subCategoryList?.getOrNull(3)?.name == mainCategory.item_subcategory_name.toString()
+                }.take(4)
+                val ls = mutableListOf<DashboardHomeProductsModal>()
+                allCategory.lastOrNull()?.subCategoryList?.size?.let {
+                    ls.add(
+                        DashboardHomeProductsModal(
+                            cat1,
+                            allCategory.lastOrNull()?.subCategoryList?.getOrNull(it - 1)?.name ?: "null",
+                            "${allCategory.lastOrNull()?.subCategoryList?.getOrNull(0)?.name}"
                         )
-                        ls.add(
-                            DashboardHomeProductsModal(
-                                cat2,
-                                allCategory.lastOrNull()?.subCategoryList?.getOrNull(it - 2)?.name ?: "null",
-                                "${allCategory.lastOrNull()?.subCategoryList?.getOrNull(1)?.name}",
-                            )
-                        )
-                        ls.add(
-                            DashboardHomeProductsModal(
-                                cat3,
-                                allCategory.lastOrNull()?.subCategoryList?.getOrNull(it - 3)?.name ?: "null",
-                                "${allCategory.lastOrNull()?.subCategoryList?.getOrNull(2)?.name}",
-                            )
-                        )
-                        ls.add(
-                            DashboardHomeProductsModal(
-                                cat4,
-                                allCategory.lastOrNull()?.subCategoryList?.getOrNull(it - 4)?.name ?: "null",
-                                "${allCategory.lastOrNull()?.subCategoryList?.getOrNull(3)?.name}",
-                            )
-                        )
-                    }
-                    apiListResponse(
-                        HttpStatusCode.OK, statusCode = 200, ls = ls, message = "fetched successfully", status = true
                     )
-
-                } catch (e: Exception) {
-                    apiResponse(
-                        statusCode = 400,
-                        message = "${e.message}",
-                        status = false,
-                        statusCodeApi = HttpStatusCode.BadRequest,
+                    ls.add(
+                        DashboardHomeProductsModal(
+                            cat2,
+                            allCategory.lastOrNull()?.subCategoryList?.getOrNull(it - 2)?.name ?: "null",
+                            "${allCategory.lastOrNull()?.subCategoryList?.getOrNull(1)?.name}",
+                        )
                     )
-
+                    ls.add(
+                        DashboardHomeProductsModal(
+                            cat3,
+                            allCategory.lastOrNull()?.subCategoryList?.getOrNull(it - 3)?.name ?: "null",
+                            "${allCategory.lastOrNull()?.subCategoryList?.getOrNull(2)?.name}",
+                        )
+                    )
+                    ls.add(
+                        DashboardHomeProductsModal(
+                            cat4,
+                            allCategory.lastOrNull()?.subCategoryList?.getOrNull(it - 4)?.name ?: "null",
+                            "${allCategory.lastOrNull()?.subCategoryList?.getOrNull(3)?.name}",
+                        )
+                    )
                 }
+                apiListResponse(
+                    HttpStatusCode.OK, statusCode = 200, ls = ls, message = "fetched successfully", status = true
+                )
+
+            } catch (e: Exception) {
+                apiResponse(
+                    statusCode = 400,
+                    message = "${e.message}",
+                    status = false,
+                    statusCodeApi = HttpStatusCode.BadRequest,
+                )
+
             }
+        }
 
-            //   authenticate("auth-jwt") {
-            get("/allusers") {
-                try {
-                    val user = db.getAllUsers()
-                    call.respond(user)
+        //   authenticate("auth-jwt") {
+        get("/allusers") {
+            try {
+                val user = db.getAllUsers()
+                call.respond(user)
 
-                } catch (e: Exception) {
-                    apiResponse(
-                        statusCode = 400,
-                        message = "${e.message}",
-                        status = false,
-                        statusCodeApi = HttpStatusCode.BadRequest,
-                    )
+            } catch (e: Exception) {
+                apiResponse(
+                    statusCode = 400,
+                    message = "${e.message}",
+                    status = false,
+                    statusCodeApi = HttpStatusCode.BadRequest,
+                )
 
-                }
             }
+        }
 //            get("/{id}") {
 //                val id = call.parameters["id"]
 //
@@ -812,27 +757,27 @@ fun Route.userRoute(
 //                    application.log.error("Failed to get data", e.message)
 //                }
 //            }
-            delete("/{id}") {
-                val id = call.parameters["id"]
+        delete("/{id}") {
+            val id = call.parameters["id"]
 
-                try {
-                    val delete = db.deleteUserById(id!!)
-                    if (delete) {
-                        call.respond("user delete")
-                    } else {
-                        call.respond("user not found")
-                    }
-
-                } catch (e: Exception) {
-                    apiResponse(
-                        statusCode = 400,
-                        message = "${e.message}",
-                        status = false,
-                        statusCodeApi = HttpStatusCode.BadRequest,
-                    )
-
+            try {
+                val delete = db.deleteUserById(id!!)
+                if (delete) {
+                    call.respond("user delete")
+                } else {
+                    call.respond("user not found")
                 }
+
+            } catch (e: Exception) {
+                apiResponse(
+                    statusCode = 400,
+                    message = "${e.message}",
+                    status = false,
+                    statusCodeApi = HttpStatusCode.BadRequest,
+                )
+
             }
+        }
 
 
     }

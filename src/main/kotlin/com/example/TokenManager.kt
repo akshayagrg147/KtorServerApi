@@ -1,12 +1,10 @@
 package com.example
 
 import com.auth0.jwt.JWT
-import com.auth0.jwt.JWTVerifier
 import com.auth0.jwt.algorithms.Algorithm
 import com.example.features.customer.domain.modal.Users
-import com.example.src.modal.RequestLoginBody
+import com.example.features.admin.domain.modal.RequestLoginBody
 import com.example.utils.Constant
-import io.ktor.server.config.*
 import java.security.SecureRandom
 import java.util.*
 
