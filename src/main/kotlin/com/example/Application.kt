@@ -82,6 +82,7 @@ fun main() {
             // Alternatively, specify allowed hosts
             allowHost("localhost:49734")
             allowHost("0.0.0.0:8083")
+            allowHost("ec2-13-235-90-96.ap-south-1.compute.amazonaws.com")
 
             // Allow common HTTP methods
             allowMethod(HttpMethod.Options)
