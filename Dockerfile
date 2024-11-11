@@ -5,7 +5,7 @@ FROM openjdk:11-jre-slim
 WORKDIR /app
 
 # Copy the JAR file into the container
-COPY fat.jar /app/fat.jar
+COPY /build/libs/fat.jar /app/fat.jar
 
 # Define the command to run your JAR file
 CMD ["java", "-jar", "/app/fat.jar"]
